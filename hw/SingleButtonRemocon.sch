@@ -1,0 +1,291 @@
+EESchema Schematic File Version 4
+LIBS:subbat-cache
+EELAYER 26 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 11 11
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L atmel:ATTINY13A-PU U4
+U 1 1 5A6E3F3F
+P 4100 2450
+F 0 "U4" H 4100 2967 50  0000 C CNN
+F 1 "ATTINY13A-PU" H 4100 2876 50  0000 C CNN
+F 2 "Housings_DIP:DIP-8_W7.62mm" H 4750 2450 50  0001 C CIN
+F 3 "http://www.atmel.com/Images/doc8126.pdf" H 3300 2800 50  0001 C CNN
+	1    4100 2450
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector:Conn_01x06_Male J16
+U 1 1 5A6E4634
+P 7750 2200
+F 0 "J16" H 7857 2578 50  0000 C CNN
+F 1 "Conn_01x06_Male" H 7857 2487 50  0000 C CNN
+F 2 "Pin_Headers:Pin_Header_Straight_1x06_Pitch2.54mm" H 7750 2200 50  0001 C CNN
+F 3 "~" H 7750 2200 50  0001 C CNN
+	1    7750 2200
+	-1   0    0    -1  
+$EndComp
+Text Label 7000 2000 0    50   ~ 0
+MISO
+Text Label 7000 2200 0    50   ~ 0
+SCK
+Text Label 7000 2300 0    50   ~ 0
+MOSI
+Text Label 7000 2400 0    50   ~ 0
+~RESET
+Wire Wire Line
+	7000 2000 7550 2000
+Wire Wire Line
+	7550 2200 7000 2200
+Wire Wire Line
+	7550 2300 7000 2300
+Wire Wire Line
+	7550 2400 7000 2400
+$Comp
+L power:GND #PWR061
+U 1 1 5A6E4643
+P 7550 2500
+F 0 "#PWR061" H 7550 2250 50  0001 C CNN
+F 1 "GND" H 7550 2350 50  0000 C CNN
+F 2 "" H 7550 2500 50  0001 C CNN
+F 3 "" H 7550 2500 50  0001 C CNN
+	1    7550 2500
+	1    0    0    -1  
+$EndComp
+Text Label 7000 2100 0    50   ~ 0
+VMCU3V3
+Wire Wire Line
+	7550 2100 7000 2100
+Text Label 6550 2200 2    50   ~ 0
+VBAT3V3
+Wire Wire Line
+	6550 2200 6150 2200
+$Comp
+L device:D_Schottky D24
+U 1 1 5A6E516F
+P 6000 2200
+F 0 "D24" H 6000 2416 50  0000 C CNN
+F 1 "D_Schottky" H 6000 2325 50  0000 C CNN
+F 2 "Diodes_SMD:D_SOD-123" H 6000 2200 50  0001 C CNN
+F 3 "" H 6000 2200 50  0001 C CNN
+	1    6000 2200
+	1    0    0    1   
+$EndComp
+$Comp
+L device:C_Small C18
+U 1 1 5A6E5BB7
+P 5250 2500
+F 0 "C18" H 5342 2546 50  0000 L CNN
+F 1 "1u" H 5342 2455 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0603_HandSoldering" H 5250 2500 50  0001 C CNN
+F 3 "" H 5250 2500 50  0001 C CNN
+	1    5250 2500
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5850 2200 5250 2200
+Wire Wire Line
+	5250 2400 5250 2200
+Connection ~ 5250 2200
+Wire Wire Line
+	5250 2200 5100 2200
+Wire Wire Line
+	5250 2600 5250 2700
+Wire Wire Line
+	5250 2700 5100 2700
+$Comp
+L power:GND #PWR060
+U 1 1 5A6E5E43
+P 5250 2700
+F 0 "#PWR060" H 5250 2450 50  0001 C CNN
+F 1 "GND" H 5250 2550 50  0000 C CNN
+F 2 "" H 5250 2700 50  0001 C CNN
+F 3 "" H 5250 2700 50  0001 C CNN
+	1    5250 2700
+	1    0    0    -1  
+$EndComp
+Connection ~ 5250 2700
+Text Label 5350 2200 0    50   ~ 0
+VMCU3V3
+$Comp
+L Switch:SW_Push SW1
+U 1 1 5A6E60DF
+P 1600 2500
+F 0 "SW1" H 1600 2785 50  0000 C CNN
+F 1 "SW_Push" H 1600 2694 50  0000 C CNN
+F 2 "components:TACT-SW-4P" H 1600 2700 50  0001 C CNN
+F 3 "" H 1600 2700 50  0001 C CNN
+	1    1600 2500
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1800 2500 3100 2500
+$Comp
+L power:GND #PWR057
+U 1 1 5A6E6289
+P 1250 2550
+F 0 "#PWR057" H 1250 2300 50  0001 C CNN
+F 1 "GND" H 1250 2400 50  0000 C CNN
+F 2 "" H 1250 2550 50  0001 C CNN
+F 3 "" H 1250 2550 50  0001 C CNN
+	1    1250 2550
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1400 2500 1250 2500
+Wire Wire Line
+	1250 2500 1250 2550
+$Comp
+L device:Q_NPN_BEC Q15
+U 1 1 5A6E6B75
+P 3100 4900
+F 0 "Q15" H 3291 4946 50  0000 L CNN
+F 1 "Q_NPN_BEC" H 3291 4855 50  0000 L CNN
+F 2 "TO_SOT_Packages_SMD:SOT-23_Handsoldering" H 3300 5000 50  0001 C CNN
+F 3 "" H 3100 4900 50  0001 C CNN
+	1    3100 4900
+	1    0    0    -1  
+$EndComp
+$Comp
+L device:R R26
+U 1 1 5A6E6B7C
+P 2800 5300
+F 0 "R26" H 2870 5346 50  0000 L CNN
+F 1 "10k" H 2870 5255 50  0000 L CNN
+F 2 "Resistors_SMD:R_0603_HandSoldering" V 2730 5300 50  0001 C CNN
+F 3 "" H 2800 5300 50  0001 C CNN
+	1    2800 5300
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2800 4900 2900 4900
+Wire Wire Line
+	3200 5200 3200 5100
+$Comp
+L power:GND #PWR058
+U 1 1 5A6E6B85
+P 3200 5200
+F 0 "#PWR058" H 3200 4950 50  0001 C CNN
+F 1 "GND" H 3205 5027 50  0000 C CNN
+F 2 "" H 3200 5200 50  0001 C CNN
+F 3 "" H 3200 5200 50  0001 C CNN
+	1    3200 5200
+	1    0    0    -1  
+$EndComp
+Text Label 2800 6050 1    50   ~ 0
+LED_OUT
+Wire Wire Line
+	2800 6050 2800 5550
+Text Label 2200 2300 0    50   ~ 0
+LED_OUT
+$Comp
+L device:C_Small C17
+U 1 1 5A6E7757
+P 2400 5300
+F 0 "C17" H 2492 5346 50  0000 L CNN
+F 1 "220p" H 2492 5255 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0603_HandSoldering" H 2400 5300 50  0001 C CNN
+F 3 "" H 2400 5300 50  0001 C CNN
+	1    2400 5300
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2800 5550 2400 5550
+Wire Wire Line
+	2400 5550 2400 5400
+Connection ~ 2800 5550
+Wire Wire Line
+	2800 5550 2800 5450
+Wire Wire Line
+	2400 5200 2400 5050
+Wire Wire Line
+	2400 5050 2800 5050
+Wire Wire Line
+	2800 5050 2800 5150
+Wire Wire Line
+	2800 5050 2800 4900
+Connection ~ 2800 5050
+$Comp
+L device:R R27
+U 1 1 5A6E9CD7
+P 3200 4500
+F 0 "R27" H 3270 4546 50  0000 L CNN
+F 1 "10R" H 3270 4455 50  0000 L CNN
+F 2 "Resistors_SMD:R_0603_HandSoldering" V 3130 4500 50  0001 C CNN
+F 3 "" H 3200 4500 50  0001 C CNN
+	1    3200 4500
+	1    0    0    -1  
+$EndComp
+$Comp
+L device:LED D23
+U 1 1 5A6EA536
+P 3200 4100
+F 0 "D23" V 3238 3983 50  0000 R CNN
+F 1 "IR LED" V 3147 3983 50  0000 R CNN
+F 2 "LEDs:LED_D5.0mm" H 3200 4100 50  0001 C CNN
+F 3 "~" H 3200 4100 50  0001 C CNN
+	1    3200 4100
+	0    -1   -1   0   
+$EndComp
+Text Label 3200 3500 3    50   ~ 0
+VBAT3V3
+Wire Wire Line
+	3200 3500 3200 3950
+Wire Wire Line
+	3200 4250 3200 4350
+Wire Wire Line
+	3200 4700 3200 4650
+$Comp
+L device:Battery_Cell BT1
+U 1 1 5A6EC5E5
+P 4500 4450
+F 0 "BT1" H 4618 4546 50  0000 L CNN
+F 1 "Battery_Cell" H 4618 4455 50  0000 L CNN
+F 2 "components:CR2032HOLDER_SIDE_SHORT" V 4500 4510 50  0001 C CNN
+F 3 "" V 4500 4510 50  0001 C CNN
+	1    4500 4450
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR059
+U 1 1 5A6EC7A2
+P 4500 4550
+F 0 "#PWR059" H 4500 4300 50  0001 C CNN
+F 1 "GND" H 4500 4400 50  0000 C CNN
+F 2 "" H 4500 4550 50  0001 C CNN
+F 3 "" H 4500 4550 50  0001 C CNN
+	1    4500 4550
+	1    0    0    -1  
+$EndComp
+Text Label 4500 3850 3    50   ~ 0
+VBAT3V3
+Wire Wire Line
+	4500 3850 4500 4250
+Text Label 2550 2300 0    50   ~ 0
+MISO
+Text Label 2550 2400 0    50   ~ 0
+SCK
+Wire Wire Line
+	3100 2400 2550 2400
+Text Label 2550 2200 0    50   ~ 0
+MOSI
+Wire Wire Line
+	3100 2200 2550 2200
+Text Label 2550 2700 0    50   ~ 0
+~RESET
+Wire Wire Line
+	3100 2700 2550 2700
+Wire Wire Line
+	2200 2300 3100 2300
+$EndSCHEMATC
