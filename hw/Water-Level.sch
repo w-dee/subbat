@@ -4,7 +4,7 @@ EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 7 16
+Sheet 5 14
 Title ""
 Date ""
 Rev ""
@@ -433,8 +433,6 @@ F 3 "" H 8200 5550 50  0001 C CNN
 	1    8200 5550
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	7050 5200 7700 5200
 Text Label 7050 5200 0    50   ~ 0
 USI_SDA
 Text Label 7050 5100 0    50   ~ 0
@@ -495,69 +493,11 @@ Text Label 8450 4100 0    50   ~ 0
 WL_VCC
 Wire Wire Line
 	8450 4100 9400 4100
-Text Label 8000 4800 0    50   ~ 0
-WL_VCC
-Wire Wire Line
-	8000 4800 8950 4800
-Wire Wire Line
-	8950 4800 8950 4900
-Wire Wire Line
-	8950 4900 9250 4900
-Wire Wire Line
-	8950 4900 8800 4900
-Connection ~ 8950 4900
 Text Label 3800 5350 0    50   ~ 0
 WL_VCC
 Wire Wire Line
 	3800 5350 4750 5350
-$Comp
-L device:R R62
-U 1 1 5AC6B4D2
-P 7450 4800
-F 0 "R62" H 7520 4846 50  0000 L CNN
-F 1 "22k" H 7520 4755 50  0000 L CNN
-F 2 "Resistors_SMD:R_0603_HandSoldering" V 7380 4800 50  0001 C CNN
-F 3 "" H 7450 4800 50  0001 C CNN
-	1    7450 4800
-	1    0    0    -1  
-$EndComp
-$Comp
-L device:R R63
-U 1 1 5AC6CE7E
-P 7700 4800
-F 0 "R63" H 7770 4846 50  0000 L CNN
-F 1 "22k" H 7770 4755 50  0000 L CNN
-F 2 "Resistors_SMD:R_0603_HandSoldering" V 7630 4800 50  0001 C CNN
-F 3 "" H 7700 4800 50  0001 C CNN
-	1    7700 4800
-	1    0    0    -1  
-$EndComp
-Text Label 7150 4550 0    50   ~ 0
-WL_VCC
-Wire Wire Line
-	7150 4550 7150 4600
-Wire Wire Line
-	7150 4600 7450 4600
-Wire Wire Line
-	7700 4600 7700 4650
-Wire Wire Line
-	7450 4650 7450 4600
-Connection ~ 7450 4600
-Wire Wire Line
-	7450 4600 7700 4600
-Wire Wire Line
-	7450 4950 7450 5100
-Connection ~ 7450 5100
-Wire Wire Line
-	7450 5100 7050 5100
-Wire Wire Line
-	7700 4950 7700 5200
-Connection ~ 7700 5200
-Wire Wire Line
-	7450 5100 8200 5100
 Connection ~ 8200 5100
-Wire Wire Line
-	7700 5200 8400 5200
 Connection ~ 8400 5200
 $Comp
 L device:Q_Photo_NPN_EC Q16
@@ -652,4 +592,12 @@ Wire Wire Line
 	6100 4000 6450 4000
 Wire Wire Line
 	6100 2700 6700 2700
+Wire Wire Line
+	7050 5200 8400 5200
+Wire Wire Line
+	7050 5100 8200 5100
+Wire Wire Line
+	8800 4900 9250 4900
+Text Label 9100 4900 2    50   ~ 0
+WL_VCC
 $EndSCHEMATC
