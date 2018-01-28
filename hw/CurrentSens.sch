@@ -4,7 +4,7 @@ EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 15 16
+Sheet 16 16
 Title ""
 Date ""
 Rev ""
@@ -58,21 +58,6 @@ F 2 "Resistors_SMD:R_0603_HandSoldering" V 2880 2150 50  0001 C CNN
 F 3 "" H 2950 2150 50  0001 C CNN
 	1    2950 2150
 	0    -1   1    0   
-$EndComp
-$Comp
-L power:+5V #PWR071
-U 1 1 5A848B7D
-P 3300 1500
-AR Path="/5A795145/5A848B7D" Ref="#PWR071"  Part="1" 
-AR Path="/5A6A936D/5A848B7D" Ref="#PWR077"  Part="1" 
-AR Path="/5A73ABE3/5A848B7D" Ref="#PWR068"  Part="1" 
-AR Path="/5A7D5B3C/5A848B7D" Ref="#PWR074"  Part="1" 
-F 0 "#PWR074" H 3300 1350 50  0001 C CNN
-F 1 "+5V" H 3315 1673 50  0000 C CNN
-F 2 "" H 3300 1500 50  0001 C CNN
-F 3 "" H 3300 1500 50  0001 C CNN
-	1    3300 1500
-	1    0    0    -1  
 $EndComp
 $Comp
 L device:C_Small C22
@@ -193,30 +178,10 @@ F 3 "" H 1850 1450 50  0001 C CNN
 	1    1850 1450
 	0    -1   -1   0   
 $EndComp
-$Comp
-L device:R R46
-U 1 1 5A848B93
-P 1850 1550
-AR Path="/5A795145/5A848B93" Ref="R46"  Part="1" 
-AR Path="/5A6A936D/5A848B93" Ref="R34"  Part="1" 
-AR Path="/5A73ABE3/5A848B93" Ref="R40"  Part="1" 
-AR Path="/5A7D5B3C/5A848B93" Ref="R52"  Part="1" 
-F 0 "R52" V 1950 1600 50  0000 L CNN
-F 1 "R001 DNI" V 2050 1400 50  0000 L CNN
-F 2 "Resistors_SMD:R_2512" V 1780 1550 50  0001 C CNN
-F 3 "" H 1850 1550 50  0001 C CNN
-	1    1850 1550
-	0    -1   1    0   
-$EndComp
-Wire Wire Line
-	1700 1550 1700 1500
-Wire Wire Line
-	2000 1550 2000 1500
 Wire Wire Line
 	2000 1500 2050 1500
 Wire Wire Line
 	2150 1500 2150 1450
-Connection ~ 2000 1500
 Wire Wire Line
 	2000 1500 2000 1450
 Wire Wire Line
@@ -232,7 +197,6 @@ Wire Wire Line
 	1600 1500 1600 1450
 Wire Wire Line
 	1600 1450 1550 1450
-Connection ~ 1700 1500
 Wire Wire Line
 	1700 1500 1700 1450
 Wire Wire Line
@@ -240,4 +204,19 @@ Wire Wire Line
 Wire Wire Line
 	1600 2150 2800 2150
 Connection ~ 1600 1500
+$Comp
+L power:+3.3V #PWR082
+U 1 1 5A6FCF13
+P 3300 1500
+AR Path="/5A795145/5A6FCF13" Ref="#PWR082"  Part="1" 
+AR Path="/5A6A936D/5A6FCF13" Ref="#PWR080"  Part="1" 
+AR Path="/5A73ABE3/5A6FCF13" Ref="#PWR081"  Part="1" 
+AR Path="/5A7D5B3C/5A6FCF13" Ref="#PWR083"  Part="1" 
+F 0 "#PWR083" H 3300 1350 50  0001 C CNN
+F 1 "+3.3V" H 3315 1673 50  0000 C CNN
+F 2 "" H 3300 1500 50  0001 C CNN
+F 3 "" H 3300 1500 50  0001 C CNN
+	1    3300 1500
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC

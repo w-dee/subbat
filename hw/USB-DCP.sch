@@ -4,7 +4,7 @@ EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 6 16
+Sheet 10 16
 Title ""
 Date ""
 Rev ""
@@ -39,7 +39,7 @@ AR Path="/5A678AED/5A659FB9" Ref="D19"  Part="1"
 AR Path="/5A678AF2/5A659FB9" Ref="D21"  Part="1" 
 F 0 "D21" V 4304 2368 50  0000 L CNN
 F 1 "6V" V 4395 2368 50  0000 L CNN
-F 2 "Diodes_SMD:D_SMA_Handsoldering" V 4350 2300 50  0001 C CNN
+F 2 "Diodes_SMD:D_SMA" V 4350 2300 50  0001 C CNN
 F 3 "https://en.wikipedia.org/wiki/Zener_diode" V 4350 2300 50  0001 C CNN
 	1    4350 2300
 	0    1    1    0   
@@ -69,7 +69,7 @@ AR Path="/5A678AED/5A659FF3" Ref="D20"  Part="1"
 AR Path="/5A678AF2/5A659FF3" Ref="D22"  Part="1" 
 F 0 "D22" V 4304 2818 50  0000 L CNN
 F 1 "6V" V 4395 2818 50  0000 L CNN
-F 2 "Diodes_SMD:D_SMA_Handsoldering" V 4350 2750 50  0001 C CNN
+F 2 "Diodes_SMD:D_SMA" V 4350 2750 50  0001 C CNN
 F 3 "https://en.wikipedia.org/wiki/Zener_diode" V 4350 2750 50  0001 C CNN
 	1    4350 2750
 	0    1    1    0   
@@ -126,7 +126,7 @@ AR Path="/5A678AED/5A65A70E" Ref="F9"  Part="1"
 AR Path="/5A678AF2/5A65A70E" Ref="F13"  Part="1" 
 F 0 "F13" V 3245 2150 50  0000 C CNN
 F 1 "2A" V 3336 2150 50  0000 C CNN
-F 2 "Fuse_Holders_and_Fuses:Fuse_SMD1206_HandSoldering" H 3500 1950 50  0001 L CNN
+F 2 "Fuse_Holders_and_Fuses:Fuse_SMD1206_Wave" H 3500 1950 50  0001 L CNN
 F 3 "" H 3450 2150 50  0001 C CNN
 	1    3450 2150
 	0    1    1    0   
@@ -141,7 +141,7 @@ AR Path="/5A678AED/5A65AA44" Ref="F10"  Part="1"
 AR Path="/5A678AF2/5A65AA44" Ref="F14"  Part="1" 
 F 0 "F14" V 3245 2450 50  0000 C CNN
 F 1 "2A" V 3336 2450 50  0000 C CNN
-F 2 "Fuse_Holders_and_Fuses:Fuse_SMD1206_HandSoldering" H 3500 2250 50  0001 L CNN
+F 2 "Fuse_Holders_and_Fuses:Fuse_SMD1206_Wave" H 3500 2250 50  0001 L CNN
 F 3 "" H 3450 2450 50  0001 C CNN
 	1    3450 2450
 	0    1    1    0   
@@ -156,7 +156,7 @@ AR Path="/5A678AED/5A65ABC6" Ref="F11"  Part="1"
 AR Path="/5A678AF2/5A65ABC6" Ref="F15"  Part="1" 
 F 0 "F15" V 3245 2750 50  0000 C CNN
 F 1 "2A" V 3336 2750 50  0000 C CNN
-F 2 "Fuse_Holders_and_Fuses:Fuse_SMD1206_HandSoldering" H 3500 2550 50  0001 L CNN
+F 2 "Fuse_Holders_and_Fuses:Fuse_SMD1206_Wave" H 3500 2550 50  0001 L CNN
 F 3 "" H 3450 2750 50  0001 C CNN
 	1    3450 2750
 	0    1    1    0   
@@ -171,7 +171,7 @@ AR Path="/5A678AED/5A65ABCC" Ref="F12"  Part="1"
 AR Path="/5A678AF2/5A65ABCC" Ref="F16"  Part="1" 
 F 0 "F16" V 3245 3050 50  0000 C CNN
 F 1 "2A" V 3336 3050 50  0000 C CNN
-F 2 "Fuse_Holders_and_Fuses:Fuse_SMD1206_HandSoldering" H 3500 2850 50  0001 L CNN
+F 2 "Fuse_Holders_and_Fuses:Fuse_SMD1206_Wave" H 3500 2850 50  0001 L CNN
 F 3 "" H 3450 3050 50  0001 C CNN
 	1    3450 3050
 	0    1    1    0   
