@@ -394,7 +394,7 @@ L device:D_Zener_Small D32
 U 1 1 5AAB9B45
 P 8400 5450
 F 0 "D32" V 8354 5518 50  0000 L CNN
-F 1 "ESD5Z3.3T1G" V 8450 5600 50  0000 L CNN
+F 1 "ESD5Z5.0T1G" V 8450 5600 50  0000 L CNN
 F 2 "Diodes_SMD:D_SOD-523" V 8400 5450 50  0001 C CNN
 F 3 "https://en.wikipedia.org/wiki/Zener_diode" V 8400 5450 50  0001 C CNN
 	1    8400 5450
@@ -416,7 +416,7 @@ L device:D_Zener_Small D31
 U 1 1 5AAB9B52
 P 8200 5450
 F 0 "D31" V 8154 5518 50  0000 L CNN
-F 1 "ESD5Z3.3T1G" V 8350 5800 50  0000 L CNN
+F 1 "ESD5Z5.0T1G" V 8350 5800 50  0000 L CNN
 F 2 "Diodes_SMD:D_SOD-523" V 8200 5450 50  0001 C CNN
 F 3 "https://en.wikipedia.org/wiki/Zener_diode" V 8200 5450 50  0001 C CNN
 	1    8200 5450
@@ -600,4 +600,98 @@ Wire Wire Line
 	8800 4900 9250 4900
 Text Label 9100 4900 2    50   ~ 0
 WL_VCC
+$Comp
+L power:GND #PWR0105
+U 1 1 5A7ACDE1
+P 1600 4250
+F 0 "#PWR0105" H 1600 4000 50  0001 C CNN
+F 1 "GND" H 1600 4100 50  0000 C CNN
+F 2 "" H 1600 4250 50  0001 C CNN
+F 3 "" H 1600 4250 50  0001 C CNN
+	1    1600 4250
+	0    1    1    0   
+$EndComp
+Text Label 700  4450 0    50   ~ 0
+PREFER_DISCHG
+Wire Wire Line
+	1650 4250 1600 4250
+$Comp
+L device:D_Zener_Small D7
+U 1 1 5A7ACDF1
+P 1300 4850
+F 0 "D7" V 1250 4700 50  0000 L CNN
+F 1 "ESD5Z5.0T1G" V 1350 4250 50  0000 L CNN
+F 2 "Diodes_SMD:D_SOD-523" V 1300 4850 50  0001 C CNN
+F 3 "https://en.wikipedia.org/wiki/Zener_diode" V 1300 4850 50  0001 C CNN
+	1    1300 4850
+	0    1    1    0   
+$EndComp
+$Comp
+L power:GND #PWR023
+U 1 1 5A7ACDF8
+P 1300 4950
+F 0 "#PWR023" H 1300 4700 50  0001 C CNN
+F 1 "GND" H 1300 4800 50  0000 C CNN
+F 2 "" H 1300 4950 50  0001 C CNN
+F 3 "" H 1300 4950 50  0001 C CNN
+	1    1300 4950
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector:Conn_01x04_Male J23
+U 1 1 5A7C29AB
+P 1850 4350
+F 0 "J23" H 1957 4628 50  0000 C CNN
+F 1 "Conn_01x04_Male" H 1957 4537 50  0000 C CNN
+F 2 "Pin_Headers:Pin_Header_Straight_1x04_Pitch2.54mm" H 1850 4350 50  0001 C CNN
+F 3 "~" H 1850 4350 50  0001 C CNN
+	1    1850 4350
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	700  4450 1300 4450
+Text Label 700  4550 0    50   ~ 0
+ALLOW_DISCHG
+Wire Wire Line
+	700  4550 1500 4550
+$Comp
+L device:D_Zener_Small D8
+U 1 1 5A7D1757
+P 1500 4850
+F 0 "D8" V 1450 4950 50  0000 L CNN
+F 1 "ESD5Z5.0T1G" V 1550 4900 50  0000 L CNN
+F 2 "Diodes_SMD:D_SOD-523" V 1500 4850 50  0001 C CNN
+F 3 "https://en.wikipedia.org/wiki/Zener_diode" V 1500 4850 50  0001 C CNN
+	1    1500 4850
+	0    1    1    0   
+$EndComp
+$Comp
+L power:GND #PWR025
+U 1 1 5A7D175D
+P 1500 4950
+F 0 "#PWR025" H 1500 4700 50  0001 C CNN
+F 1 "GND" H 1500 4800 50  0000 C CNN
+F 2 "" H 1500 4950 50  0001 C CNN
+F 3 "" H 1500 4950 50  0001 C CNN
+	1    1500 4950
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1300 4750 1300 4450
+Connection ~ 1300 4450
+Wire Wire Line
+	1300 4450 1650 4450
+Wire Wire Line
+	1500 4750 1500 4550
+Connection ~ 1500 4550
+Wire Wire Line
+	1500 4550 1650 4550
+Text Label 6700 2300 1    50   ~ 0
+PREFER_DISCHG
+Text Label 6750 2100 0    50   ~ 0
+ALLOW_DISCHG
+Text Label 550  4350 0    50   ~ 0
+WL_VCC
+Wire Wire Line
+	550  4350 1650 4350
 $EndSCHEMATC
