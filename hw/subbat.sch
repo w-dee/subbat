@@ -302,7 +302,6 @@ S 10450 1900 500  150
 U 5A653DCD
 F0 "USB-DCP1" 50
 F1 "USB-DCP.sch" 50
-F2 "VBUS_COM" I L 10450 2000 50 
 $EndSheet
 $Sheet
 S 10050 4000 500  150 
@@ -426,17 +425,6 @@ F 3 "~" H 9800 950 50  0001 C CNN
 	1    9800 950 
 	-1   0    0    1   
 $EndComp
-$Comp
-L power:GND #PWR020
-U 1 1 5A662C8F
-P 10000 950
-F 0 "#PWR020" H 10000 700 50  0001 C CNN
-F 1 "GND" H 10005 777 50  0000 C CNN
-F 2 "" H 10000 950 50  0001 C CNN
-F 3 "" H 10000 950 50  0001 C CNN
-	1    10000 950 
-	-1   0    0    -1  
-$EndComp
 Text Label 10450 850  2    50   ~ 0
 VBUS_COM_IN
 $Sheet
@@ -444,21 +432,12 @@ S 10450 2200 500  150
 U 5A676C71
 F0 "USB-DCP2" 50
 F1 "USB-DCP.sch" 50
-F2 "VBUS_COM" I L 10450 2300 50 
 $EndSheet
 $Sheet
 S 10450 2500 500  150 
 U 5A678AED
 F0 "USB-DCP3" 50
 F1 "USB-DCP.sch" 50
-F2 "VBUS_COM" I L 10450 2600 50 
-$EndSheet
-$Sheet
-S 10450 2800 500  150 
-U 5A678AF2
-F0 "USB-DCP4" 50
-F1 "USB-DCP.sch" 50
-F2 "VBUS_COM" I L 10450 2900 50 
 $EndSheet
 Text Label 3750 7300 2    50   ~ 0
 SW_VR
@@ -1467,14 +1446,8 @@ Text GLabel 3850 6450 2    50   Input ~ 0
 SDA
 Text GLabel 10900 1350 2    50   Input ~ 0
 VCOM
-Text GLabel 10450 2000 0    50   Input ~ 0
-VCOM
-Text GLabel 10450 2300 0    50   Input ~ 0
-VCOM
-Text GLabel 10450 2600 0    50   Input ~ 0
-VCOM
-Text GLabel 10450 2900 0    50   Input ~ 0
-VCOM
+Text GLabel 10000 950  2    50   Input ~ 0
+BUSGND
 $Comp
 L DeeComponents:P82B715 U10
 U 1 1 5ABFA627
@@ -1727,7 +1700,7 @@ F 3 "~" H 8900 4350 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	7800 4250 8650 4250
+	7800 4250 8450 4250
 Wire Wire Line
 	8650 4250 8650 4050
 Wire Wire Line
@@ -1798,4 +1771,69 @@ Wire Wire Line
 Connection ~ 1800 3000
 Wire Wire Line
 	1800 3000 1800 3100
+$Comp
+L device:R R5
+U 1 1 5A749697
+P 9700 2100
+F 0 "R5" H 9770 2146 50  0000 L CNN
+F 1 "2.2k" H 9770 2055 50  0000 L CNN
+F 2 "Resistors_SMD:R_0603_HandSoldering" V 9630 2100 50  0001 C CNN
+F 3 "" H 9700 2100 50  0001 C CNN
+	1    9700 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L device:LED D9
+U 1 1 5A74969E
+P 9700 2450
+F 0 "D9" V 9738 2333 50  0000 R CNN
+F 1 "LED" V 9647 2333 50  0000 R CNN
+F 2 "LEDs:LED_D3.0mm" H 9700 2450 50  0001 C CNN
+F 3 "~" H 9700 2450 50  0001 C CNN
+	1    9700 2450
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	9700 2300 9700 2250
+Wire Wire Line
+	9700 2650 9700 2600
+Text GLabel 9700 1950 1    50   Input ~ 0
+VCOM
+$Comp
+L device:CP1_Small C26
+U 1 1 5A78DDAB
+P 8600 3600
+F 0 "C26" H 8691 3646 50  0000 L CNN
+F 1 "CP1_Small" H 8691 3555 50  0000 L CNN
+F 2 "Capacitors_ThroughHole:CP_Radial_D8.0mm_P2.50mm" H 8600 3600 50  0001 C CNN
+F 3 "" H 8600 3600 50  0001 C CNN
+	1    8600 3600
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR024
+U 1 1 5A78DDB2
+P 8600 3700
+F 0 "#PWR024" H 8600 3450 50  0001 C CNN
+F 1 "GND" H 8600 3550 50  0000 C CNN
+F 2 "" H 8600 3700 50  0001 C CNN
+F 3 "" H 8600 3700 50  0001 C CNN
+	1    8600 3700
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8450 4250 8450 3500
+Wire Wire Line
+	8450 3500 8600 3500
+Connection ~ 8450 4250
+Wire Wire Line
+	8450 4250 8650 4250
+Text GLabel 9700 2650 3    50   Input ~ 0
+BUSGND
+$Sheet
+S 10450 2800 500  150 
+U 5A678AF2
+F0 "USB-DCP4" 50
+F1 "USB-DCP.sch" 50
+$EndSheet
 $EndSCHEMATC
