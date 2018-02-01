@@ -4,7 +4,7 @@ EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 11 14
+Sheet 8 14
 Title ""
 Date ""
 Rev ""
@@ -283,7 +283,7 @@ U 1 1 5AF11D6D
 P 4100 2450
 F 0 "U4" H 4100 2967 50  0000 C CNN
 F 1 "ATTINY13A-SSU" H 4100 2876 50  0000 C CNN
-F 2 "Housings_SOIC:SOIC-8_3.9x4.9mm_Pitch1.27mm" H 4700 2450 50  0001 C CIN
+F 2 "Housings_DIP:DIP-8_W7.62mm" H 4700 2450 50  0001 C CIN
 F 3 "http://www.atmel.com/Images/doc8126.pdf" H 3300 2800 50  0001 C CNN
 	1    4100 2450
 	1    0    0    -1  
