@@ -268,31 +268,6 @@ Wire Wire Line
 	4800 1200 5000 1200
 Connection ~ 4800 1200
 Connection ~ 5000 1200
-$Comp
-L device:D_Zener_Small D33
-U 1 1 5A717C5D
-P 5550 1300
-F 0 "D33" V 5504 1368 50  0000 L CNN
-F 1 "ESD5Z5.0T1G" V 5600 1450 50  0000 L CNN
-F 2 "Diodes_SMD:D_SOD-523" V 5550 1300 50  0001 C CNN
-F 3 "https://en.wikipedia.org/wiki/Zener_diode" V 5550 1300 50  0001 C CNN
-	1    5550 1300
-	0    1    1    0   
-$EndComp
-$Comp
-L power:GND #PWR0102
-U 1 1 5A717C64
-P 5550 1400
-F 0 "#PWR0102" H 5550 1150 50  0001 C CNN
-F 1 "GND" H 5550 1250 50  0000 C CNN
-F 2 "" H 5550 1400 50  0001 C CNN
-F 3 "" H 5550 1400 50  0001 C CNN
-	1    5550 1400
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	5550 1200 5150 1200
-Connection ~ 5150 1200
 Text Label 3700 1200 0    50   ~ 0
 REG_IN
 $Comp
