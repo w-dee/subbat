@@ -36,3 +36,5 @@ sym-lib-table
 *.xcf
 firmware.bin
 
+hw/gerber
+
