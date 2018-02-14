@@ -13,6 +13,9 @@ _autosave-*
 *.o
 *.elf
 *.hex
+*.i
+*.s
+*.bin
 
 # Netlist files (exported from Eeschema)
 *.net
