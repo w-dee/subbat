@@ -34,6 +34,29 @@
          |                                          +--- SW_BAT --+- POWER OUT
          |                                                        |
          +-----------------------------------------------SW_VS  --+
+
+
+
+OC1A -- CC control
+OC1B -- CV control
+
+                      |\
+ ICHARGE_SENS    ---- |+\            ^
+ OC1A(filtered)  ---- |- > ----+     |
+                      | /      |     <
+                      |/       |     >
+                               |     < 10k
+                      |\       |     >
+ VA_SENS_ADC     ---- |+\      |     |
+ OC1B(filtered)  ---- |- > ----+-----+------[inverter]---> reglator feedback
+                      | /
+                      |/
+
+reglator feedback >= 0.8V   decrease output
+reglator feedback <  0.8V   increase output
+
+reglator feedback = !( ICHARGE_SENS < OC1A || VA_SENS_ADC < OC1B)
+
 */
 
 
@@ -274,65 +297,6 @@ static void disable_va_sens()
 }
 
 //--------------------------------------------------------------------
-/* EEPROM 関連 */
-typedef struct eeprom_tag
-{
-	uint8_t size;
-	float vth_vs;
-	float vth_vr;
-	float vth_va;
-	float vth_vd;
-} eeprom_t;
-static eeprom_t eeprom;
-
-void eeprom_all_reset()
-{
-	eeprom.vth_vs = 13.0f;
-	eeprom.vth_va = 11.0f;
-	eeprom.vth_vd = 10.0f;
-	eeprom.vth_vr = 10.0f;
-
-}
-
-static uint16_t calc_checksum()
-{
-	uint8_t * p = (uint8_t *)&eeprom;
-	int i;
-	uint8_t s1 = 0, s2 = 0;
-	for(i = 0; i < sizeof(eeprom); i++)
-	{
-		s1 += p[i];
-		s2 += s1;
-	}
-	return ((uint16_t)s2<<8) + s1;
-}
-
-
-void eeprom_setup()
-{
-	// 内容を読み込む
-	uint16_t sum;
-	while(!eeprom_is_ready()) /**/;
-	eeprom_read_block(&eeprom, (void*)0, sizeof(eeprom));
-	eeprom_read_block(&sum, (void*)sizeof(eeprom), sizeof(sum));
-	if(calc_checksum() != sum || eeprom.size != sizeof(eeprom))
-	{
-		debug_send_P(PSTR("EEPROM content broken, force initialize\n"));
-		eeprom_all_reset();
-	}
-}
-
-void eeprom_write_force()
-{
-	while(!eeprom_is_ready()) /**/;
-	eeprom.size = sizeof(eeprom);
-	uint16_t sum = calc_checksum();
-	// TODO: eeprom書き込み中における do_busy_poll の呼び出し
-	eeprom_write_block(&eeprom, (void*)0, sizeof(eeprom));
-	eeprom_write_block(&sum, (void*)sizeof(eeprom), sizeof(sum));
-}
-
-//--------------------------------------------------------------------
 // タイマー関連
 
 static void timer0_setup()
@@ -507,144 +471,6 @@ static void poll_power()
 		}
 	}
 }
-
-//--------------------------------------------------------------------
-
-static char sbuf[80];
-
-static void console_status()
-{
-	sprintf_P(sbuf, PSTR("system voltage: %2.2f   battery voltage: %2.2f    h<enter> for help\r\n"),
-		vs, va);
-	debug_send(sbuf);
-}
-
-static void console_usage()
-{
-	sprintf_P(sbuf, PSTR("Current settings:\r\n")); 
-	debug_send(sbuf);
-	sprintf_P(sbuf, PSTR("Deep sleep shutdown battery voltage   (vd): %2.2f\r\n"), eeprom.vth_vd);
-	debug_send(sbuf);
-	sprintf_P(sbuf, PSTR("Charge start system input voltage     (vs): %2.2f\r\n"), eeprom.vth_vs);
-	debug_send(sbuf);
-	sprintf_P(sbuf, PSTR("Charge terimnation battery voltage    (va): %2.2f\r\n"), eeprom.vth_va);
-	debug_send(sbuf);
-	sprintf_P(sbuf, PSTR("Active system input voltage threshold (vr): %2.2f\r\n"), eeprom.vth_vr);
-	debug_send(sbuf);
-	sprintf_P(sbuf, PSTR("\r\nCommands:\r\n")); 
-	debug_send(sbuf);
-	sprintf_P(sbuf, PSTR("vd <voltage>    Set vd.\r\n")); 
-	debug_send(sbuf);
-	sprintf_P(sbuf, PSTR("vs <voltage>    Set vs.\r\n")); 
-	debug_send(sbuf);
-	sprintf_P(sbuf, PSTR("va <voltage>    Set va.\r\n")); 
-	debug_send(sbuf);
-	sprintf_P(sbuf, PSTR("vr <voltage>    Set vr.\r\n")); 
-	debug_send(sbuf);
-}
-
-static void console_command(const char *p)
-{
-	if(p[0] == 'v' && p[1] == 'd' && p[2] == ' ')
-	{
-		float t = atof(p + 3);
-		if(t > 0.0f)
-		{
-			eeprom.vth_vd = t;
-			eeprom_write_force();
-		}
-	}
-	else if(p[0] == 'v' && p[1] == 's' && p[2] == ' ')
-	{
-		float t = atof(p + 3);
-		if(t > 0.0f)
-		{
-			eeprom.vth_vs = t;
-			eeprom_write_force();
-		}
-	}
-	else if(p[0] == 'v' && p[1] == 'a' && p[2] == ' ')
-	{
-		float t = atof(p + 3);
-		if(t > 0.0f)
-		{
-			eeprom.vth_va = t;
-			eeprom_write_force();
-		}
-	}
-	else if(p[0] == 'v' && p[1] == 'r' && p[2] == ' ')
-	{
-		float t = atof(p + 3);
-		if(t > 0.0f)
-		{
-			eeprom.vth_vr = t;
-			eeprom_write_force();
-		}
-	}
-	else
-	{
-		console_usage();
-	}
-}
-
-
-#define LINE_BUF_LEN 80
-static char line_buf[LINE_BUF_LEN + 1];
-static uint8_t receive_index = 0;
-
-
-void poll_serial()
-{
-	uint8_t ch = receive();
-
-	if(ch > 0)
-	{
-		switch(ch)
-		{
-		case 0x08: // bs
-		case 127: // del
-			if(receive_index > 0)
-			{
-				-- receive_index;
-				send((char)'\x08');
-				send((char)' ');
-				send((char)'\x08');
-			}
-			break;
-
-		case '\r':
-			send((char)'\r');
-			send((char)'\n');
-			line_buf[receive_index] = 0;
-			console_command(line_buf);
-			receive_index = 0;
-			console_status();
-			send((char)'>');
-			send((char)' ');
-			break;
-
-		case '\n':
-			break;// discard
-
-		default:
-			if(ch >= 0x20)
-			{
-				if(receive_index < LINE_BUF_LEN)
-				{
-					line_buf[receive_index] = ch;
-					++ receive_index;
-					send((char)ch);
-				}
-			}
-			else
-			{
-				send(' ');
-			}
-		}
-	}
-}
-
-
 //--------------------------------------------------------------------
 
 int main(void) __attribute__((noreturn));

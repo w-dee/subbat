@@ -1,0 +1,16 @@
+Device: ATtiny13
+Mode: ISP/HVS
+Low: 76543210
+     ||||||++-- CKSEL[1:0] システムクロック選択
+     ||||++-- SUT[1:0] 起動時間
+     |||+-- CKDIV8 クロック分周初期値 (1:1/1, 0:1/8)
+     ||+-- WDTON (WDT 0:常時ON, 1:通常)
+     |+-- EESAVE (Chip消去でEEPROMを 0:保持, 1:消去)
+     +-- SPIEN (1:ISP禁止, 0:ISP許可) ※HVS時のみ
+
+High:---43210
+        ||||+-- RSTDISBL (RESETピン 1:有効, 0:無効(PB5))
+        ||++-- BODLEVEL[1:0] (11:Off, 10:1.8V, 01:2.7V, 00:4.3V)
+        |+-- DWEN (On-Chipデバッグ 1:無効, 0:有効)
+        +-- SPMEN (SPM命令 1:無効, 0:有効)
+

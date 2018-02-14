@@ -5,10 +5,9 @@ FUSE_X  = 0xf9 # 0b11111100
 FUSE_L  = 0xe2 # 0b11100010
 FUSE_H  = 0xdf # 0b11011001
 
-
-HIDSPX  = sudo /home/takahiro/workspace/avr/hidspx -d5 -ph
-CFLAGS  = -I. -I../servo-driver
-OBJECTS = main.o 
+HIDSPX  = sudo /workspace/avr/hidspx -d5 -ph
+CFLAGS  = -I. -Wl,-u,vfscanf -lscanf_flt -lm
+OBJECTS = main.o I2C_slave.o
 
 COMPILE = avr-gcc -g -Wall -Os  -DF_CPU=$(F_CPU) $(CFLAGS) -mmcu=$(DEVICE)
 
@@ -74,3 +73,8 @@ disasm:	main.elf
 
 cpp:
 	$(COMPILE) -E main.c
+
+
+settings_debug:
+	gcc -DSETTINGS_DEBUG -Wall -g -o settings_debug.bin settings.c
+
