@@ -64,10 +64,10 @@ void USI_TWI_Slave_Initialise(unsigned char TWI_ownAddress)
 	Flush_TWI_Buffers();
 
 	TWI_slaveAddress = TWI_ownAddress;
-
+#ifdef TWI_USE_ISR_CALLBACK
 	USI_TWI_On_Slave_Transmit = 0;
 	USI_TWI_On_Slave_Receive = 0;
-
+#endif
 	PORT_USI_CL |= (1 << PORT_USI_SCL);     // Set SCL high
 	PORT_USI |= (1 << PORT_USI_SDA);        // Set SDA high
 	DDR_USI_CL |= (1 << PORT_USI_SCL);      // Set SCL as output
@@ -161,7 +161,12 @@ __interrupt void USI_Start_Condition_ISR(void)
 #endif
 {
 	unsigned char tmpPin; // Temporary variable for pin state
+
+#ifdef TWI_USE_ISR_CALLBACK
 	unsigned char tmpRxHead; // Temporary variable to store volatile
+#endif
+
+#ifdef TWI_USE_ISR_CALLBACK
 	// call slave receive callback on repeated start
 	if (USI_TWI_On_Slave_Receive) {
 		tmpRxHead = TWI_RxHead;
@@ -171,6 +176,7 @@ __interrupt void USI_Start_Condition_ISR(void)
 			TWI_RxTail = tmpRxHead;
 		}
 	}
+#endif
 
 	USI_TWI_Overflow_State = USI_SLAVE_CHECK_ADDRESS;
 	DDR_USI &= ~(1 << PORT_USI_SDA); // Set SDA as input
@@ -217,12 +223,14 @@ __interrupt void USI_Counter_Overflow_ISR(void)
 	case USI_SLAVE_CHECK_ADDRESS:
 		if ((USIDR == 0) || ((USIDR >> 1) == TWI_slaveAddress)) {
 			if (USIDR & 0x01) {
+#ifdef TWI_USE_ISR_CALLBACK
 				if (USI_TWI_On_Slave_Transmit) {
 					// reset tx buffer and call callback
 					tmpTxTail = TWI_TxHead;
 					TWI_TxTail = tmpTxTail;
 					USI_TWI_On_Slave_Transmit();
 				}
+#endif
 				USI_TWI_Overflow_State = USI_SLAVE_SEND_DATA;
 			} else {
 				USI_TWI_Overflow_State = USI_SLAVE_REQUEST_DATA;
@@ -271,6 +279,7 @@ __interrupt void USI_Counter_Overflow_ISR(void)
 	case USI_SLAVE_REQUEST_DATA:
 		USI_TWI_Overflow_State = USI_SLAVE_GET_DATA_AND_SEND_ACK;
 		SET_USI_TO_READ_DATA();
+#ifdef TWI_USE_ISR_CALLBACK
 		// call slave receive callback on stop condition
 		if (USI_TWI_On_Slave_Receive) {
 			tmpRxHead = TWI_RxHead;
@@ -286,6 +295,7 @@ __interrupt void USI_Counter_Overflow_ISR(void)
 				}
 			}
 		}
+#endif
 		break;
 
 	// Copy data from USIDR and send ACK. Next USI_SLAVE_REQUEST_DATA

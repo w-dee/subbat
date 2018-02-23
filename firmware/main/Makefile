@@ -6,9 +6,9 @@ FUSE_L  = 0xe2 # 0b11100010
 FUSE_H  = 0xdf # 0b11011001
 
 
-HIDSPX  = sudo /home/takahiro/workspace/avr/hidspx -d5 -ph
-CFLAGS  = -I. -I../servo-driver
-OBJECTS = main.o 
+HIDSPX  = sudo /workspace/avr/hidspx -d5 -ph
+CFLAGS  = -I. -Wl,-u,vfscanf -lscanf_flt -Wl,-u,vfprintf -lprintf_flt -lm -std=gnu99
+OBJECTS = main.o TinyI2CMaster.o bme280.o
 
 COMPILE = avr-gcc -g -Wall -Os  -DF_CPU=$(F_CPU) $(CFLAGS) -mmcu=$(DEVICE)
 

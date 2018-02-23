@@ -32,10 +32,10 @@ unsigned char USI_TWI_Data_In_Receive_Buffer(void);
 unsigned char USI_TWI_Space_In_Transmission_Buffer(void);
 unsigned char USI_TWI_Slave_Is_Active();
 
+#ifdef TWI_USE_ISR_CALLBACK
 void (*USI_TWI_On_Slave_Transmit)(void);
 void (*USI_TWI_On_Slave_Receive)(int);
-
-void Timer_Init(void);
+#endif
 
 #define TRUE 1
 #define FALSE 0

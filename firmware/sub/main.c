@@ -9,9 +9,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include "setr.h"
-#include "I2C_slave.h"
-
-#define I2C_SLAVE_ADDR 0x16
+#include "TWI_slave.h"
+#include "settings.h"
 //--------------------------------------------------------------------
 
 /**
@@ -52,7 +51,7 @@ static void send(unsigned char x)
 /**
  * 文字列を送信する
  */
-static void debug_send_P(const char * str)
+void debug_send_P(const char * str)
 {
 	for(;;)
 	{
@@ -65,7 +64,7 @@ static void debug_send_P(const char * str)
 /**
  * 文字列を送信する
  */
-static void debug_send(const char * str)
+void debug_send(const char * str)
 {
 	for(;;)
 	{
@@ -79,7 +78,7 @@ static void debug_send(const char * str)
 /**
  * 数値を送信する
  */
-static void debug_send_n(long int n)
+void debug_send_n(long int n)
 {
 	char buf[16];
 	ltoa(n, buf, 10);
@@ -91,7 +90,6 @@ static uint8_t receive( void )
 {
 	if(!(SERIAL_COM_CONCAT3(UCSR, A) & (1<<SERIAL_COM_CONCAT2(RXC)))) return 0;
 
-	
 	if(SERIAL_COM_CONCAT3(UCSR, A) & (1<<SERIAL_COM_CONCAT2(FE)) )
 	{
 		// frame error
@@ -180,144 +178,8 @@ static float get_voltage(uint8_t ch)
 	return res;
 }
 
+
 //--------------------------------------------------------------------
-/* EEPROM 関連 */
-#if 0
-
-
-typedef struct eeprom_tag
-{
-	uint16_t size;
-r
-} eeprom_t;
-static eeprom_t eeprom;
-
-void eeprom_all_reset()
-{
-	eeprom.vth_vs = 13.0f;
-	eeprom.vth_va = 11.0f;
-	eeprom.vth_vd = 10.0f;
-	eeprom.vth_vr = 10.0f;
-
-}
-
-static uint16_t calc_checksum()
-{
-	uint8_t * p = (uint8_t *)&eeprom;
-	int i;
-	uint8_t s1 = 0, s2 = 0;
-	for(i = 0; i < sizeof(eeprom); i++)
-	{
-		s1 += p[i];
-		s2 += s1;
-	}
-	return ((uint16_t)s2<<8) + s1;
-}
-
-
-void eeprom_setup()
-{
-	// 内容を読み込む
-	uint16_t sum;
-	while(!eeprom_is_ready()) /**/;
-	eeprom_read_block(&eeprom, (void*)0, sizeof(eeprom));
-	eeprom_read_block(&sum, (void*)sizeof(eeprom), sizeof(sum));
-	if(calc_checksum() != sum || eeprom.size != sizeof(eeprom))
-	{
-		debug_send_P(PSTR("EEPROM content broken, force initialize\n"));
-		eeprom_all_reset();
-	}
-}
-
-void eeprom_write_force()
-{
-	while(!eeprom_is_ready()) /**/;
-	eeprom.size = sizeof(eeprom);
-	uint16_t sum = calc_checksum();
-	// TODO: eeprom書き込み中における do_busy_poll の呼び出し
-	eeprom_write_block(&eeprom, (void*)0, sizeof(eeprom));
-	eeprom_write_block(&sum, (void*)sizeof(eeprom), sizeof(sum));
-}
-
-#endif
-//--------------------------------------------------------------------
-#if 0
-static char sbuf[80];
-
-static void console_status()
-{
-	sprintf_P(sbuf, PSTR("system voltage: %2.2f   battery voltage: %2.2f    h<enter> for help\r\n"),
-		vs, va);
-	debug_send(sbuf);
-}
-
-static void console_usage()
-{
-	sprintf_P(sbuf, PSTR("Current settings:\r\n")); 
-	debug_send(sbuf);
-	sprintf_P(sbuf, PSTR("Deep sleep shutdown battery voltage   (vd): %2.2f\r\n"), eeprom.vth_vd);
-	debug_send(sbuf);
-	sprintf_P(sbuf, PSTR("Charge start system input voltage     (vs): %2.2f\r\n"), eeprom.vth_vs);
-	debug_send(sbuf);
-	sprintf_P(sbuf, PSTR("Charge terimnation battery voltage    (va): %2.2f\r\n"), eeprom.vth_va);
-	debug_send(sbuf);
-	sprintf_P(sbuf, PSTR("Active system input voltage threshold (vr): %2.2f\r\n"), eeprom.vth_vr);
-	debug_send(sbuf);
-	sprintf_P(sbuf, PSTR("\r\nCommands:\r\n")); 
-	debug_send(sbuf);
-	sprintf_P(sbuf, PSTR("vd <voltage>    Set vd.\r\n")); 
-	debug_send(sbuf);
-	sprintf_P(sbuf, PSTR("vs <voltage>    Set vs.\r\n")); 
-	debug_send(sbuf);
-	sprintf_P(sbuf, PSTR("va <voltage>    Set va.\r\n")); 
-	debug_send(sbuf);
-	sprintf_P(sbuf, PSTR("vr <voltage>    Set vr.\r\n")); 
-	debug_send(sbuf);
-}
-
-static void console_command(const char *p)
-{
-	if(p[0] == 'v' && p[1] == 'd' && p[2] == ' ')
-	{
-		float t = atof(p + 3);
-		if(t > 0.0f)
-		{
-			eeprom.vth_vd = t;
-			eeprom_write_force();
-		}
-	}
-	else if(p[0] == 'v' && p[1] == 's' && p[2] == ' ')
-	{
-		float t = atof(p + 3);
-		if(t > 0.0f)
-		{
-			eeprom.vth_vs = t;
-			eeprom_write_force();
-		}
-	}
-	else if(p[0] == 'v' && p[1] == 'a' && p[2] == ' ')
-	{
-		float t = atof(p + 3);
-		if(t > 0.0f)
-		{
-			eeprom.vth_va = t;
-			eeprom_write_force();
-		}
-	}
-	else if(p[0] == 'v' && p[1] == 'r' && p[2] == ' ')
-	{
-		float t = atof(p + 3);
-		if(t > 0.0f)
-		{
-			eeprom.vth_vr = t;
-			eeprom_write_force();
-		}
-	}
-	else
-	{
-		console_usage();
-	}
-}
 
 
 #define LINE_BUF_LEN 80
@@ -325,7 +187,7 @@ static char line_buf[LINE_BUF_LEN + 1];
 static uint8_t receive_index = 0;
 
 
-void poll_serial()
+static void poll_serial()
 {
 	uint8_t ch = receive();
 
@@ -348,9 +210,9 @@ void poll_serial()
 			send((char)'\r');
 			send((char)'\n');
 			line_buf[receive_index] = 0;
-			console_command(line_buf);
+			parse_command(line_buf); // in settings.c
 			receive_index = 0;
-			console_status();
+
 			send((char)'>');
 			send((char)' ');
 			break;
@@ -377,41 +239,96 @@ void poll_serial()
 }
 
 
-#endif
 /* -------------------------------------------------------------------- */
 
-uint8_t in_isr_callback_prepare_i2c_write(uint8_t addr)
-{
-	return 1;
-}
-
-void in_isr_callback_done_i2c_write()
-{
-}
-
-// this is called during i2c isr; user code must
-// prepare data in i2c_txbuffer[] and set i2c_txlen.
-void in_isr_callback_prepare_i2c_read(uint8_t addr)
-{
-	if(addr < 128)
-	{
-		// read eeprom
-		i2c_tx_len = 16;
-		eeprom_read_block(&(i2c_txbuffer[0]), (void*)(addr * 32), 32);
-		return;
-	}
-/*
-	switch(addr)
-	{
-		case 0:
-		
-	}
-*/
-}
 
 
 /* -------------------------------------------------------------------- */
+static unsigned char TWI_Act_On_Failure_In_Last_Transmission ( unsigned char TWIerrorMsg )
+{
+	// A failure has occurred, use TWIerrorMsg to determine the nature of the failure
+	// and take appropriate actions.
+	// Se header file for a list of possible failures messages.
 
+	// This very simple example puts the error code on PORTB and restarts the transceiver with
+	// all the same data in the transmission buffers.
+	PORTB = TWIerrorMsg;
+	TWI_Start_Transceiver();
+	
+	return TWIerrorMsg; 
+}
+
+static unsigned char messageBuf[TWI_BUFFER_SIZE];
+
+
+// TWI polling
+static void poll_TWI()
+{
+
+	// Check if the TWI Transceiver has completed an operation.
+	if ( ! TWI_Transceiver_Busy() )
+	{
+		// Check if the last operation was successful
+		if ( TWI_statusReg.lastTransOK )
+		{
+			// Check if the last operation was a reception
+			if ( TWI_statusReg.RxDataInBuf )
+			{
+				TWI_Get_Data_From_Transceiver(messageBuf, 3);
+				// Check if the last operation was a reception as General Call
+				if ( TWI_statusReg.genAddressCall )
+				{
+					; /* do nothing */
+				}
+				else // Ends up here if the last operation was a reception as Slave Address Match
+				{
+					uint8_t return_size = 0;
+					// interpret I2C commands
+					switch(messageBuf[0])
+					{
+					case TWI_CMD_PING: // ping
+						messageBuf[0] = 0xaa; // pong
+						return_size = 1;
+						break;
+
+					case TWI_CMD_QUERY_EEPROM_SIZE: // eeprom size query
+						messageBuf[0] = get_eeprom_size();
+						messageBuf[1] = TWI_BUFFER_SIZE;
+						return_size = 2;
+						break;	
+
+					case TWI_CMD_COPY_EEPROM: // eeprom block transfer
+					  {
+					    uint8_t start = messageBuf[1];
+					    uint8_t size = messageBuf[2]; // TODO: parameter check
+						copy_shadow_eeprom(messageBuf, start, size);
+						return_size = size;
+					  }
+						break;
+					}
+
+					if(return_size)
+						TWI_Start_Transceiver_With_Data( messageBuf, return_size );
+
+				}
+			}
+			else // Ends up here if the last operation was a transmission
+			{
+				; // Put own code here.
+			}
+			// Check if the TWI Transceiver has already been started.
+			// If not then restart it to prepare it for new receptions.
+			if ( ! TWI_Transceiver_Busy() )
+			{
+			  TWI_Start_Transceiver();
+			}
+		}
+		else // Ends up here if the last operation completed unsuccessfully
+		{
+			TWI_Act_On_Failure_In_Last_Transmission( TWI_Get_State_Info() );
+		}
+	}
+}
 
 int main(void) __attribute__((noreturn));
 int main(void)
@@ -423,15 +340,20 @@ int main(void)
 	_delay_ms(50);
 
 	// setup
-	I2C_init(I2C_SLAVE_ADDR);
-
+	adc_setup();
+	init_serial();
+	TWI_Slave_Initialise( (unsigned char)((I2C_SUB_SLAVE_ADDR<<TWI_ADR_BITS) | (TRUE<<TWI_GEN_BIT) )); 
+	TWI_Start_Transceiver();
+	eeprom_setup();
 
 	// enter infinite loop
 	sei();
 	for(;;)
 	{
+		// poll actions
+		poll_serial();
+		poll_TWI();
 	}
-
 }
 
 /* -------------------------------------------------------------------- */

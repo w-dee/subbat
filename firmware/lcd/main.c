@@ -29,8 +29,10 @@ static void lcd_data(uint8_t nibble)
 	nibble &= 0x0f;
 	nibble <<= 3;
 	// output nibble to PORTD  3...6
-	PORTD &= 0b10000111;
-	PORTD |= nibble;
+	uint8_t tmp = PORTD;
+	tmp &= 0b10000111;
+	tmp |= nibble;
+	PORTD = tmp;
 }
 
 static void lcd_set_rs(uint8_t n)
@@ -164,7 +166,7 @@ static void lcd_print(uint8_t *str, uint8_t len)
 static uint8_t pwm_count;
 static uint8_t lcd_contrast = 12;
 static uint8_t brightness = 50;
-static uint8_t status_led;
+static uint8_t led_status;
 
 
 static void init_timer0()
@@ -175,50 +177,41 @@ static void init_timer0()
 	SETR(TIMSK, TOIE0); // enable overflow interrupt
 }
 
-static void light_on()
-{
-	SETR(PORTB, BACKLIGHT_PIN);
-
-	uint8_t led = status_led;
-
-	if(led & 1)
-		SETR(PORTB, STATUS_0_PIN);
-	else
-		SETR(PORTB, ~STATUS_0_PIN);
-
-	if(led & 2)
-		SETR(PORTA, STATUS_1_PIN);
-	else
-		SETR(PORTA, ~STATUS_1_PIN);
-
-	if(led & 4)
-		SETR(PORTA, STATUS_2_PIN);
-	else
-		SETR(PORTA, ~STATUS_2_PIN);
-}
-
-static void light_off()
-{
-	SETR(PORTB, ~BACKLIGHT_PIN);
-	SETR(PORTB, ~STATUS_0_PIN);
-	SETR(PORTA, ~STATUS_1_PIN);
-	SETR(PORTA, ~STATUS_2_PIN);
-}
 
 
 ISR(TIMER0_OVF_vect)
 {
 	uint8_t count = ++ pwm_count;
 
+	uint8_t pb = PORTB;
+	uint8_t pa = PORTA;
+
+	pb &= ~(
+		(1<<BACKLIGHT_PIN) |
+		(1<<STATUS_0_PIN) |
+		(1<<LCD_CONTRAST_PIN));
+
+	pa &= ~(
+		(1<<STATUS_1_PIN) |
+		(1<<STATUS_2_PIN));
+
 	if(count <= lcd_contrast)
-		SETR(PORTB, LCD_CONTRAST_PIN);
-	else
-		SETR(PORTB, ~LCD_CONTRAST_PIN);
+		pb |= (1<<LCD_CONTRAST_PIN);
 
 	if((uint8_t)(~count) <= brightness)
-		light_on();
-	else
-		light_off();
+	{
+		uint8_t led = led_status;
+		pb |= (1<<BACKLIGHT_PIN);
+		if(led & 1)
+			pb |= (1<<STATUS_0_PIN);
+		if(led & 2)
+			pa |= (1<<STATUS_1_PIN);
+		if(led & 4)
+			pa |= (1<<STATUS_2_PIN);
+	}
+
+	PORTB = pb;
+	PORTA = pa;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -330,7 +323,7 @@ int main(void)
 				break;
 
 			case 0x05: // write led status
-				status_led = USI_TWI_Receive_Byte();
+				led_status = USI_TWI_Receive_Byte();
 				break;
 
 			case 0x06: // read status
