@@ -6,7 +6,7 @@ FUSE_L  = 0xe2 # 0b11100010
 FUSE_H  = 0xdf # 0b11011001
 
 
-HIDSPX  = sudo /workspace/avr/hidspx -d5 -ph
+HIDSPX  = sudo /workspace/avr/hidspx -d1 -ph
 CFLAGS  = -I. -Wl,-u,vfscanf -lscanf_flt -Wl,-u,vfprintf -lprintf_flt -lm -std=gnu99
 OBJECTS = main.o TinyI2CMaster.o bme280.o
 

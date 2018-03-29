@@ -16,6 +16,7 @@
 
 #define SWITCH_0_PIN 1 // PORT B
 #define SWITCH_1_PIN 2 // PORT B
+#define PUSH_SW_PIN 6 // PORT B
 
 #define CHARGE_PIN 0 // PORT D
 #define SENS_PIN 0 // PORT B
@@ -24,15 +25,50 @@
 /* ------------------------------------------------------------------------- */
 // LCD functions
 
+#include "dots.h"
+
+// user-defined character data
+static const  uint8_t cg_data[][8] PROGMEM = {
+
+{
+/* code 0x08 */
+XX________,
+__________,
+____XXXXXX,
+__XX______,
+__XX______,
+__XX______,
+____XXXXXX,
+0,
+},
+
+{
+/* code 0x09 */
+____XX____,
+__XX______,
+__XXXXXXXX,
+________XX,
+XX__XXXX__,
+XXXX______,
+XXXXXX____,
+
+0,
+},
+
+};
+
 static void lcd_data(uint8_t nibble)
 {
 	nibble &= 0x0f;
 	nibble <<= 3;
 	// output nibble to PORTD  3...6
-	uint8_t tmp = PORTD;
+	uint8_t tmp;
+	cli(); // prevent changing PORTD state in interrupt routine
+	tmp = PORTD;
 	tmp &= 0b10000111;
-	tmp |= nibble;
+	tmp += nibble;
 	PORTD = tmp;
+	sei();
 }
 
 static void lcd_set_rs(uint8_t n)
@@ -122,6 +158,18 @@ static void init_lcd()
 	lcd_4bit_command(0x01); // clear
 	lcd_delay4ms();lcd_delay4ms();lcd_delay4ms();lcd_delay4ms();
 	lcd_delay4ms();
+
+	lcd_4bit_command(0x40); // set CGRAM address
+
+	// register user-defined glyphs
+	for(uint8_t c = 0; c < sizeof(cg_data); ++c)
+	{
+		//assumes cg_data array data is continuous on progmem
+		lcd_4bit_data(pgm_read_byte((uint8_t*)(& ( cg_data[0][0] )) + c));
+	}
+
+
+	lcd_4bit_command(0x80); // set DDRAM address
 }
 
 static void lcd_home()
@@ -163,7 +211,7 @@ static void lcd_print(uint8_t *str, uint8_t len)
 /* ------------------------------------------------------------------------- */
 // Timer0 setup
 
-static uint8_t pwm_count;
+static uint8_t pwm_count = 255;
 static uint8_t lcd_contrast = 12;
 static uint8_t brightness = 50;
 static uint8_t led_status;
@@ -177,7 +225,14 @@ static void init_timer0()
 	SETR(TIMSK, TOIE0); // enable overflow interrupt
 }
 
+volatile static uint8_t push_button_debounder = 0;
+volatile static uint8_t button_pressed = 0;
 
+
+#define DISCHARGE_START_PHASE  0 // start discharge at this timing
+#define CHARGE_START_PHASE 64 // start charge at this timing
+volatile static uint8_t measured_time = 0;
+static uint8_t measuring = 0;
 
 ISR(TIMER0_OVF_vect)
 {
@@ -212,57 +267,87 @@ ISR(TIMER0_OVF_vect)
 
 	PORTB = pb;
 	PORTA = pa;
+
+	// charge/discharge to measure phototransistor's current
+	if(count == DISCHARGE_START_PHASE)
+	{
+		// start discharge
+		// force discharge capacitor
+		SETR(PORTB, ~SENS_PIN);
+		SETR(DDRB, SENS_PIN);
+		SETR(PORTD, ~CHARGE_PIN);
+		SETR(DDRD, CHARGE_PIN);
+	}
+	else if(count == CHARGE_START_PHASE)
+	{
+		// start charge
+		SETR(DDRB, ~SENS_PIN);
+		SETR(PORTD, CHARGE_PIN);
+		measuring = 1;	
+	}
+	else if(measuring && count > CHARGE_START_PHASE)
+	{
+		if(PINB & (1<<SENS_PIN) || count == 255)
+		{
+			// charge completed. measuered time is to be IIR filtered.
+			uint8_t new_measured_time;
+			uint8_t old_measured_time;
+			new_measured_time = count - CHARGE_START_PHASE;
+			old_measured_time = measured_time;
+			uint8_t updated_measured_time;
+			updated_measured_time =
+				old_measured_time + ((int16_t)(
+					(int16_t)new_measured_time - (int16_t)old_measured_time) >> 1);
+			measured_time = updated_measured_time;
+			measuring = 0;
+		}
+	}
+
+
+	// check push button
+	if(count == 0)
+	{
+		// approx. 122Hz intervally executed block;
+		// push_button_debounder is latest 8 point history
+		// of button pressed-state sampling
+		uint8_t deb = push_button_debounder; 
+		deb <<= 1;
+		if(!(PINB & (1<<PUSH_SW_PIN))) deb |= 1;
+
+		if(deb == 0b00000001) button_pressed = 1;
+
+		push_button_debounder = deb;
+	}
+}
+
+static uint8_t get_button_pressed()
+{
+	uint8_t pressed;
+	cli();
+	pressed = button_pressed;
+	button_pressed = 0;
+	sei();
+	return pressed;
 }
 
 /* ------------------------------------------------------------------------- */
 volatile static uint8_t ambient_brightness;
 volatile static uint8_t switch_positions;
 
-static uint8_t _read_ambient()
-{
-	// force discharge capacitor
-	SETR(PORTB, ~SENS_PIN);
-	SETR(DDRB, SENS_PIN);
-	SETR(PORTD, ~CHARGE_PIN);
-	SETR(DDRD, CHARGE_PIN);
-
-	// wait for discharging capacitor
-	_delay_us(100);
-
-	// float SENS pin and set CHARGE pin HIGH
-	SETR(DDRB, ~SENS_PIN);
-	SETR(PORTD, CHARGE_PIN);
-
-	// measure time to SENS_PIN gets high
-	cli();
-	volatile uint8_t n;
-	for(n = 0; n < 255; n++)
-		if(PINB & (1<<SENS_PIN)) break;
-	sei();
-
-	return ~n;
-}
-
 // read ambient brightness and switches
 static void read_switches()
 {
 	// read switch position
 	switch_positions = 
-		(PINB & (1<<SWITCH_0_PIN) ? 1 : 0 )+
-		(PINB & (1<<SWITCH_1_PIN) ? 2 : 0 );
+		((PINB & (1<<SWITCH_0_PIN) )? 1 : 0 )+
+		((PINB & (1<<SWITCH_1_PIN) )? 2 : 0 );
+
 
 	// store the result
-	uint16_t avg = 0;
-	for(uint8_t i = 0; i < 16; ++i)
-		avg += _read_ambient();
-	ambient_brightness = avg / 16;
-
-	// force discharge capacitor
-	SETR(PORTB, ~SENS_PIN);
-	SETR(DDRB, SENS_PIN);
-	SETR(PORTD, ~CHARGE_PIN);
-	SETR(DDRD, CHARGE_PIN);
+	ambient_brightness = ~measured_time;
 }
+
+
 
 
 /* ------------------------------------------------------------------------- */
@@ -284,8 +369,10 @@ int main(void)
 	SETR(DDRB, BACKLIGHT_PIN, LCD_CONTRAST_PIN, STATUS_0_PIN);
 	SETR(DDRA, STATUS_1_PIN, STATUS_2_PIN);
 
-	SETR(DDRB, ~SWITCH_0_PIN, ~SWITCH_1_PIN);
-	SETR(PORTB, SWITCH_0_PIN, SWITCH_1_PIN); // weak pull-up
+	SETR(DDRB, ~SWITCH_0_PIN, ~SWITCH_1_PIN, ~PUSH_SW_PIN);
+	SETR(PORTB, SWITCH_0_PIN, SWITCH_1_PIN, PUSH_SW_PIN); // weak pull-up
+
+	DDRD = 0xff; // all output
 
 	init_timer0();
 	init_lcd();
@@ -329,7 +416,7 @@ int main(void)
 			case 0x06: // read status
 				read_switches();
 				USI_TWI_Transmit_Byte(ambient_brightness);
-				USI_TWI_Transmit_Byte(switch_positions);
+				USI_TWI_Transmit_Byte(switch_positions + (get_button_pressed() ? 4 : 0));
 				break;
 
 			case 0x07: // read eeprom

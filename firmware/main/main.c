@@ -61,8 +61,8 @@ reglator feedback <  0.8V   increase output
 reglator feedback = !( ICHARGE_SENS < OC1A || VA_SENS_ADC < OC1B)
 
 
-
-SYS->OUT 10.0A | AMB 20C 54% 1023h
+----------++++++++++----------++++++++++
+SYS->OUT 10.0A | AMB 20.1C 54% 1023h
 C-CHARGE 12.0V 10.3A | BAT 11.0V 19C
 
 C: constant current charge
@@ -71,18 +71,30 @@ F: floating charge
 */
 
 #define CURRENT_SENS_REGISTER 0.01 // current sens register value
-#define CURRENT_SENS_GAIN ((1000.0 + 120.0) / 120.0)
+#define CURRENT_SENS_GAIN ((4700.0 + 680.0) / 120.0)
 
 static float current_to_reading_voltage(float current)
 {
 	return current * (CURRENT_SENS_REGISTER * CURRENT_SENS_GAIN);
 }
 
-#define VOLTAGE_SENSE_GAIN (1.0 / (22.0 + 10.0 + 1.0))
+#define VOLTAGE_SENSE_GAIN (10.0 / (56.0 + 10.0 + 10.0))
 
 static float voltage_to_reading_voltage(float voltage)
 {
 	return voltage * VOLTAGE_SENSE_GAIN;
+}
+
+#define VR_FB_VOLTAGE_GAIN (10.0 / (56.0 + 10.0 + 10.0)) // for comparator
+#define VR_FB_CURRENT_PWM_GAIN (1.0) // for pwm LPF
+
+#define VREF_VOLTAGE 4.7405
+
+#define VDD_SENS_GAIN (10.0 / (10.0 + 22.0))
+
+static float voltage_to_voltage_comparator_voltage(float voltage)
+{
+	return voltage * VR_FB_VOLTAGE_GAIN;
 }
 
 /* ポートマップの定義 */
@@ -102,8 +114,8 @@ MAP_START(pmap)
 		MAP_MATCH( C, 3, DIDR0, ADC3D );
 		MAP_MATCH( C, 4, DIDR0, ADC4D );
 		MAP_MATCH( C, 5, DIDR0, ADC5D );
-		MAP_MATCH( C, 6, DIDR0, -1 );
-//		MAP_MATCH( C, 7, DIDR0, -1 );
+		MAP_MATCH( C, 6, DIDR0, 6 );
+		MAP_MATCH( C, 7, DIDR0, 7 );
 
 		MAP_MATCH( D, 0, DIDR0, -1 );
 		MAP_MATCH( D, 1, DIDR0, -1 );
@@ -121,10 +133,9 @@ static void port_setup()
 
 
 pmap('C', 6, MDO0); // 1 PC6 (PCINT14/RESET)      RESET
-pmap('D', 0, MDO0); // 2 PD0 (PCINT16/RXD)        RX
+pmap('D', 0, MDI);  // 2 PD0 (PCINT16/RXD)        RX
 pmap('D', 1, MDO0); // 3 PD1 (PCINT17/TXD)        TX
-#define SW_CHG 'D', 2
-pmap('D', 2, MDO0); // 4 PD2 (PCINT18/INT0)       SW_CHG
+pmap('D', 2, MDO0); // 4 PD2 (PCINT18/INT0)       SCL
 #define OUTPUT_CHARGE 'D', 3
 pmap('D', 3, MDO0); // 5 PD3 (PCINT19/OC2B/INT1)  OUTPUT_CHARGE
 #define SW_BAT 'D', 4
@@ -132,19 +143,20 @@ pmap('D', 4, MDO0); // 6 PD4 (PCINT20/XCK/T0)     SW_BAT
                     // 7 VCC
                     // 8 GND
 #define DEEP_SLEEP_EN 'B', 6
-pmap('B', 6, MDO0); // 9 PB6 (PCINT6/XTAL1/TOSC1) /DEEP_SLEEP_EN
-pmap('B', 7, MDO1); //10 PB7 (PCINT7/XTAL2/TOSC2) M/S select
+pmap('B', 6, MDO1); // 9 PB6 (PCINT6/XTAL1/TOSC1) /DEEP_SLEEP_EN
+#define SW_CHG 'B', 7
+pmap('B', 7, MDI);  //10 PB7 (PCINT7/XTAL2/TOSC2) SW_CHG
 #define SW_VR 'D', 5
 pmap('D', 5, MDO0); //11 PD5 (PCINT21/OC0B/T1)    SW_VR
-pmap('D', 6, MDO0); //12 PD6 (PCINT22/OC0A/AIN0)  
-pmap('D', 7, MDO0); //13 PD7 (PCINT23/AIN1)       
+pmap('D', 6, MDO0); //12 PD6 (PCINT22/OC0A/AIN0)  SDA
+pmap('D', 7, MDIP); //13 PD7 (PCINT23/AIN1)       DIGITAL_IN0
 #define SW_VS  'B', 0
 pmap('B', 0, MDO0); //14 PB0 (PCINT0/CLKO/ICP1)   SW_VS
-pmap('B', 1, MDO1); //15 PB1 (OC1A/PCINT1)        CC_CTRL
+pmap('B', 1, MDO0); //15 PB1 (OC1A/PCINT1)        CC_CTRL
 pmap('B', 2, MDO0); //16 PB2 (SS/OC1B/PCINT2)     CV_CTRL
-pmap('B', 3, MDO0); //17 PB3 (MOSI/OC2A/PCINT3)   
-pmap('B', 4, MDO0); //18 PB4 (MISO/PCINT4)        
-pmap('B', 5, MDO0); //19 PB5 (SCK/PCINT5)         
+pmap('B', 3, MDO0); //17 PB3 (MOSI/OC2A/PCINT3)   MOSI
+pmap('B', 4, MDO0); //18 PB4 (MISO/PCINT4)        MISO
+pmap('B', 5, MDO0); //19 PB5 (SCK/PCINT5)         SCK
                     //20 AVCC
                     //21 AREF
                     //22 GND
@@ -153,14 +165,17 @@ pmap('C', 0, MAI);  //23 PC0 (ADC0/PCINT8)        VS Voltage sense
 #define ADC_CH_VA_SENSE 1
 pmap('C', 1, MAI);  //24 PC1 (ADC1/PCINT9)        VA Voltage sense
 #define ADC_CH_IOUT_SENSE 2
-pmap('C', 2, MDO0); //25 PC2 (ADC2/PCINT10)       IOUT sense
+pmap('C', 2, MAI);  //25 PC2 (ADC2/PCINT10)       IOUT sense
 #define ADC_CH_ISYS_SENSE 3
-pmap('C', 3, MDO0); //26 PC3 (ADC3/PCINT11)       ISYS sense
+pmap('C', 3, MAI);  //26 PC3 (ADC3/PCINT11)       ISYS sense
 #define ADC_CH_VR_SENS 4
-pmap('C', 4, MDO0); //27 PC4 (ADC4/SDA/PCINT12)   VR output voltage sens
-pmap('C', 5, MDO0); //28 PC5 (ADC5/SCL/PCINT13)   
+pmap('C', 4, MAI);  //27 PC4 (ADC4/SDA/PCINT12)   VR output voltage sens
+#define ADC_CH_VDD_SENS 5
+pmap('C', 5, MAI);  //28 PC5 (ADC5/SCL/PCINT13)   
 #define ADC_CH_IUSB_SENSE 6
+pmap('C', 6, MAI);  //28 PC6 
 #define ADC_CH_ICHARGE_SENSE 7
+pmap('C', 7, MAI);  //28 PC7
 
 }
 
@@ -187,10 +202,10 @@ void do_panic(uint8_t reason)
 static void init_serial()
 {
 	
-	SERIAL_COM_CONCAT3(UBRR, L) = 10; // apprx. 115200baud
+	SERIAL_COM_CONCAT3(UBRR, L) = 8; // apprx. 115200baud
 	SERIAL_COM_CONCAT3(UBRR, H) = 0;
 	SETR(SERIAL_COM_CONCAT3(UCSR, A),
-		~SERIAL_COM_CONCAT2(U2X)); // normal speed
+		SERIAL_COM_CONCAT2(U2X)); // High speed
 	SETR(SERIAL_COM_CONCAT3(UCSR, B),
 		~SERIAL_COM_CONCAT2(RXCIE),
 		~SERIAL_COM_CONCAT2(TXCIE),
@@ -377,9 +392,9 @@ static void adc_setup()
 	/* adc を初期化する */
 	/*
 		ADC auto trigger disabled
-		disable ADC interrupt, x128 prescaler = 156k conversion clock
+		disable ADC interrupt, x64 prescaler = 125k conversion clock
 	*/
-	SETR(ADCSRA, ADEN, ~ADATE, ADIF, ~ADIE, ADPS2, ADPS1, ADPS0);
+	SETR(ADCSRA, ADEN, ~ADATE, ADIF, ~ADIE, ADPS2, ADPS1, ~ADPS0);
 
 	/*
 		No free running mode
@@ -387,11 +402,11 @@ static void adc_setup()
 	SETR(ADCSRB, ~ADTS2, ~ADTS1, ~ADTS0);
 
 	/*
-		1.1V with external capacitor at AREF pin
+		AREF, Internal V ref turned off
 		result in left adjusted
 	*/
-	SETR(ADMUX, REFS1, REFS0, ~ADLAR, ~MUX3, ~MUX2, ~MUX1, ~MUX0);
-	_delay_ms(10); // VREFが安定するまで待つ
+	SETR(ADMUX, ~REFS1, ~REFS0, ~ADLAR, ~MUX3, ~MUX2, ~MUX1, ~MUX0);
+
 	adc_last_ch = -1;
 }
 
@@ -471,11 +486,11 @@ static void timer1_setup()
 	/* timer1とWGMを初期化 */
 	/*
 		Clear OC1A/OC1B on Compare Match, set OC1A/OC1B at BOTTOM (non-inverting mode)
-		WGM mode = 1010 (Phase Correct PWM, TOP = ICR1)
+		WGM mode = 1110 (Fast PWM, TOP = ICR1)
 		clock source = CLKio
 	*/
 	SETR(TCCR1A, COM1A1, ~COM1A0, COM1B1, ~COM1B0, WGM11, ~WGM10);
-	SETR(TCCR1B, WGM13, ~WGM12, ~FOC1A, ~FOC1B, ~CS12, ~CS11, CS10);
+	SETR(TCCR1B, WGM13, WGM12, ~FOC1A, ~FOC1B, ~CS12, ~CS11, CS10);
 	SETR(DDRB, 1, 2); // PB1, PB2 = output
 	SETR(PORTB, ~1, ~2); 
 	ICR1 = 1023;
@@ -498,39 +513,33 @@ static float vr_target_current; // target current
 static uint32_t vr_stabled_tick;
 static float vr_target_voltage; // target voltage
 static uint16_t computed_voltage_pwm; // computed voltage pwm value
-#define VR_CALIBRARTION_MAX_PWM_DIFFERENCE 10
+#define VR_CALIBRARTION_MAX_PWM_DIFFERENCE 22 // approx. +/- 0.1 V
 static float mcu_voltage; // MCU Vdd voltage
 uint8_t vr_connected_to_battery = 0;
 
 // measure mcu voltage
 static void measure_mcu_voltage()
 {
-	// To use Avcc
-	SETR(ADMUX, ~REFS1, REFS0);
-
-	// measure Vref 1.1V using Avcc (=Vdd) scale
 	uint16_t vdd = 0;
 	for(uint8_t i = 0; i < 16; ++i)
-		vdd += get_adc(0b1110);
+		vdd += get_adc(ADC_CH_VDD_SENS);
 
-	mcu_voltage = (1.1 * 1024.0 * 16.0) / (float)vdd;
+	mcu_voltage = ((float)vdd / (16.0f * 1024.0f)) / VDD_SENS_GAIN * VREF_VOLTAGE;
 
 	debug_send("MCU voltage :");
 	debug_send_f(mcu_voltage);
 	debug_send("\r\n");
-
-	// again use Vref 1.1V
-	SETR(ADMUX, REFS1, REFS0);
 }
 
-#define VR_VOLTAGE_STABILIZE_TIME 100
-#define VR_CURRENT_STABILIZE_TIME 100
+#define VR_VOLTAGE_STABILIZE_TIME 300
+#define VR_CURRENT_STABILIZE_TIME 300
 
 static void set_target_current(float v)
 {
 	if(mcu_voltage == 0.0) measure_mcu_voltage();
 
-	uint16_t pwm_width = current_to_reading_voltage(v) / mcu_voltage * (ICR1 + 1);
+	uint16_t pwm_width = current_to_reading_voltage(v) /
+		(mcu_voltage * VR_FB_CURRENT_PWM_GAIN) * (ICR1 + 1);
 	vr_target_current = v;
 
 	if(pwm_width >= ICR1) do_panic(4); // wtf ? out of range
@@ -555,10 +564,8 @@ static void set_target_voltage(float v)
 {
 	if(mcu_voltage == 0.0) measure_mcu_voltage();
 
-	uint16_t pwm_width = voltage_to_reading_voltage(v) / mcu_voltage * (ICR1 + 1);
+	uint16_t pwm_width = voltage_to_voltage_comparator_voltage(v) / mcu_voltage * (ICR1 + 1);
 	vr_target_voltage = v;
-// TODO: Voltage divider to the voltage comparator has too narrow voltage range;
-// Add another voltage divider which shrinks 0..30V to 0..5V.
 
 	if(pwm_width >= ICR1) do_panic(4); // wtf ? out of range
 
@@ -643,7 +650,7 @@ static void calibrate_voltate(float now_voltage)
 	}
 
 	debug_send("target:"); debug_send_f(vr_target_voltage);debug_send("  ");
-	debug_send("current:"); debug_send_f(now_voltage);debug_send("  ");
+	debug_send("now:"); debug_send_f(now_voltage);debug_send("  ");
 	debug_send("pwm:"); debug_send_n(width);debug_send("  ");
 	debug_send("\r\n");
 
@@ -652,13 +659,13 @@ static void calibrate_voltate(float now_voltage)
 
 static void poll_vr()
 {
-	INTERVAL(1000)
+	INTERVAL(10000)
 	{
 		measure_mcu_voltage();
 	}
 
 	// voltage regulater needs some startup time after 'RUN' has issued...
-	INTERVAL(10)
+	INTERVAL(1000)
 	{
 		float voltage;
 		float current;
@@ -925,7 +932,7 @@ static void poll_battery_charge()
 
 static void set_charge_state(uint8_t v)
 {
-	// enable of disable the battery charge
+	// enable or disable the battery charge
 }
 
 //--------------------------------------------------------------------
@@ -1007,15 +1014,21 @@ static char line_buf[LINE_BUF_LEN + 1];
 static uint8_t receive_index = 0;
 
 //--------------------------------------------------------------------
+__attribute__((noinline)) static uint8_t parse_float(const char *p, float *dest)
+{
+	return sscanf_P(p, PSTR("%f"), dest) == 1;
+}
+//--------------------------------------------------------------------
+
 static void parse_command(const char *buf)
 {
 	float param = 0;
-	if(buf[0] == 'c' && buf[1] == 'c' && sscanf_P(buf+2, "%f", &param) == 1)
+	if(buf[0] == 'c' && buf[1] == 'c' && parse_float(buf+2, &param))
 	{
 		set_target_current(param);
 	}
 	else
-	if(buf[0] == 'c' && buf[1] == 'v' && sscanf_P(buf+2, "%f", &param) == 1)
+	if(buf[0] == 'c' && buf[1] == 'v' && parse_float(buf+2, &param))
 	{
 		set_target_voltage(param);
 	}
@@ -1197,15 +1210,15 @@ void bme280_poll()
 		{
 			bme280_exist = deWorking;
 			debug_send_P(PSTR("BME280 Temp : "));
-			debug_send_f(bme280_last_result.temperature);
+			debug_send_n(bme280_last_result.temperature);
 			debug_send_P(PSTR(" deg C\r\n"));
 
 			debug_send_P(PSTR("BME280 Humid: "));
-			debug_send_f(bme280_last_result.humidity);
+			debug_send_n(bme280_last_result.humidity);
 			debug_send_P(PSTR(" %\r\n"));
 
 			debug_send_P(PSTR("BME280 Press: "));
-			debug_send_f(bme280_last_result.pressure);
+			debug_send_n(bme280_last_result.pressure);
 			debug_send_P(PSTR(" hPa\r\n"));
 		}
 		else
@@ -1282,7 +1295,7 @@ void tmp102_poll()
 		if(res == 0)
 		{
 			int16_t d = (tmp[0] << 4) | (tmp[1] >> 4);
-			if(d > 0x7FF) d |= 0xf000;
+			if((uint16_t)d > 0x7FF) d |= 0xf000;
 			tmp102_temperature = d * 0.0625;
 			tmp102_exist = deWorking;
 			debug_send_P(PSTR("TMP102 : "));
@@ -1310,26 +1323,25 @@ int main(void)
 	_delay_ms(50);
 
 	// setup
-	I2C_Init();
+//	I2C_Init();
 	init_serial();
-	bme280_setup();
-	init_tmp102();
+//	bme280_setup();
+//	init_tmp102();
 	//eeprom_setup(); TODO: transfer eeprom content from sub processor
-	eeprom_copy(); // TODO: proper eeprom initialization
+//	eeprom_copy(); // TODO: proper eeprom initialization
 	adc_setup();
 	timer0_setup();
 	timer1_setup();
 
 	// banner
-	debug_send_P(PSTR("\n\nAux power controller\n\n"));
+	debug_send_P(PSTR("\r\n\r\nAux power controller\r\n\r\n"));
 
 
 	// enter infinite loop
-	sei();
 	for(;;)
 	{
-		bme280_poll();
-		tmp102_poll();
+//		bme280_poll();
+//		tmp102_poll();
 		poll_power();
 		poll_serial();
 	}

@@ -13,7 +13,7 @@ FUSE_L  = 0xe4 # see below for fuse values for particular devices
 FUSE_H  = 0xdd
 HIDSPX  = sudo /workspace/avr/hidspx -d4 -ph # edit this line for your programmer
 
-CFLAGS  = -I. -DDEBUG_LEVEL=0 -save-temps  
+CFLAGS  = -I. -DDEBUG_LEVEL=0 -save-temps -std=gnu99 -flto
 OBJECTS = main.o USI_TWI_Slave.o
 
 COMPILE = avr-gcc -std=gnu99 -g -Wall -Os -DF_CPU=$(F_CPU) $(CFLAGS) -mmcu=$(DEVICE)
