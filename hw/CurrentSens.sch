@@ -4,7 +4,7 @@ EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 10 15
+Sheet 13 15
 Title ""
 Date ""
 Rev ""
@@ -120,7 +120,7 @@ AR Path="/5A6A936D/5A848B8B" Ref="R37"  Part="1"
 AR Path="/5A73ABE3/5A848B8B" Ref="R43"  Part="1" 
 AR Path="/5A7D5B3C/5A848B8B" Ref="R55"  Part="1" 
 F 0 "R55" H 3770 2496 50  0000 L CNN
-F 1 "1k" H 3770 2405 50  0000 L CNN
+F 1 "4.7k" H 3770 2405 50  0000 L CNN
 F 2 "Resistors_SMD:R_0603_HandSoldering" V 3630 2450 50  0001 C CNN
 F 3 "" H 3700 2450 50  0001 C CNN
 	1    3700 2450
@@ -146,7 +146,7 @@ AR Path="/5A6A936D/5A848B8C" Ref="R38"  Part="1"
 AR Path="/5A73ABE3/5A848B8C" Ref="R44"  Part="1" 
 AR Path="/5A7D5B3C/5A848B8C" Ref="R56"  Part="1" 
 F 0 "R56" H 4070 2496 50  0000 L CNN
-F 1 "120R" H 4070 2405 50  0000 L CNN
+F 1 "680R" H 4070 2405 50  0000 L CNN
 F 2 "Resistors_SMD:R_0603_HandSoldering" V 3930 2450 50  0001 C CNN
 F 3 "" H 4000 2450 50  0001 C CNN
 	1    4000 2450
@@ -220,5 +220,5 @@ F 3 "" H 3300 1500 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Text Notes 5250 2500 0    50   ~ 0
-R_SENSE = 0.01R then\n10A => V_SENSE = 0.1V, Gain = (1k+120)/120 thus\nICHARGE_SENS=0.9333333333333333\n10mA => V_SENSE = 0.0001V (=Voffset of LT6105),\nICHARGE_SENS=0.0009333333333333333.\nThe maximum resolution is 10mA.
+R_SENSE = 0.01R then\n10A => V_SENSE = 0.1V, Gain = (4700+680)/120 thus\nICHARGE_SENS=4.483\n\nThe maximum resolution is approx. 10mA.
 $EndSCHEMATC
