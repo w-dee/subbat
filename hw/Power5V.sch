@@ -854,4 +854,9 @@ Wire Wire Line
 Connection ~ 1250 4850
 Wire Wire Line
 	1250 4850 1250 3900
+Text HLabel 1750 1650 0    50   Input ~ 0
+~VA_CONNECT
+Wire Wire Line
+	2000 1650 1750 1650
+Connection ~ 2000 1650
 $EndSCHEMATC

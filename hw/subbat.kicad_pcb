@@ -1,4 +1,4 @@
-(kicad_pcb (version 20171130) (host pcbnew 5.0.0-rc2-dev-unknown-827b818~62~ubuntu14.04.1)
+(kicad_pcb (version 20171130) (host pcbnew 5.0.0-rc2-dev-unknown-0ded476~63~ubuntu14.04.1)
 
   (general
     (thickness 1.6)
@@ -10486,10 +10486,10 @@
       (net 1 GND) (zone_connect 2))
   )
 
-  (gr_line (start 52 19) (end 101 19) (layer Cmts.User) (width 0.15))
+  (gr_line (start 62 19) (end 101 19) (layer Cmts.User) (width 0.15))
   (gr_line (start 101 51) (end 101 19) (layer Cmts.User) (width 0.15))
-  (gr_line (start 52 51) (end 101 51) (layer Cmts.User) (width 0.15))
-  (gr_line (start 52 19) (end 52 51) (layer Cmts.User) (width 0.15))
+  (gr_line (start 62 51) (end 101 51) (layer Cmts.User) (width 0.15))
+  (gr_line (start 62 19) (end 62 51) (layer Cmts.User) (width 0.15))
   (gr_line (start 45.9 90.4) (end 45.1 90) (layer Cmts.User) (width 0.15))
   (gr_line (start 47.4 92.2) (end 48.7 92.2) (layer Cmts.User) (width 0.15))
   (gr_line (start 46.1 91.7) (end 47.4 92.2) (layer Cmts.User) (width 0.15))
