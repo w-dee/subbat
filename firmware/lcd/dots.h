@@ -1,0 +1,34 @@
+#define __________ 0
+#define ________XX 1
+#define ______XX__ 2
+#define ______XXXX 3
+#define ____XX____ 4
+#define ____XX__XX 5
+#define ____XXXX__ 6
+#define ____XXXXXX 7
+#define __XX______ 8
+#define __XX____XX 9
+#define __XX__XX__ 10
+#define __XX__XXXX 11
+#define __XXXX____ 12
+#define __XXXX__XX 13
+#define __XXXXXX__ 14
+#define __XXXXXXXX 15
+#define XX________ 16
+#define XX______XX 17
+#define XX____XX__ 18
+#define XX____XXXX 19
+#define XX__XX____ 20
+#define XX__XX__XX 21
+#define XX__XXXX__ 22
+#define XX__XXXXXX 23
+#define XXXX______ 24
+#define XXXX____XX 25
+#define XXXX__XX__ 26
+#define XXXX__XXXX 27
+#define XXXXXX____ 28
+#define XXXXXX__XX 29
+#define XXXXXXXX__ 30
+#define XXXXXXXXXX 31
+
+
