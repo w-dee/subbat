@@ -20,14 +20,13 @@
 #define SERIAL_COM_CONCAT2(A) A##0 // rewrite '0' to your favorite port
 #define SERIAL_COM_CONCAT3(A,C) A##0##C // rewrite '0' to your favorite port
 
-
 static void init_serial()
 {
 	
-	SERIAL_COM_CONCAT3(UBRR, L) = 10; // apprx. 115200baud
+	SERIAL_COM_CONCAT3(UBRR, L) = 8; // apprx. 115200baud
 	SERIAL_COM_CONCAT3(UBRR, H) = 0;
 	SETR(SERIAL_COM_CONCAT3(UCSR, A),
-		~SERIAL_COM_CONCAT2(U2X)); // normal speed
+		SERIAL_COM_CONCAT2(U2X)); // High speed
 	SETR(SERIAL_COM_CONCAT3(UCSR, B),
 		~SERIAL_COM_CONCAT2(RXCIE),
 		~SERIAL_COM_CONCAT2(TXCIE),
@@ -38,6 +37,7 @@ static void init_serial()
 		SERIAL_COM_CONCAT3(UCSZ, 1),
 		SERIAL_COM_CONCAT3(UCSZ, 0)); // 8bit, disable rx/tx interrupt
 }
+
 
 
 static void send(unsigned char x)
@@ -111,12 +111,13 @@ static uint8_t adc_last_ch;
 
 static void adc_setup()
 {
+
 	/* adc を初期化する */
 	/*
 		ADC auto trigger disabled
-		disable ADC interrupt, x128 prescaler = 156k conversion clock
+		disable ADC interrupt, x64 prescaler = 125k conversion clock
 	*/
-	SETR(ADCSRA, ADEN, ~ADATE, ADIF, ~ADIE, ADPS2, ADPS1, ADPS0);
+	SETR(ADCSRA, ADEN, ~ADATE, ADIF, ~ADIE, ADPS2, ADPS1, ~ADPS0);
 
 	/*
 		No free running mode
@@ -340,6 +341,8 @@ int main(void)
 	_delay_ms(50);
 
 	// setup
+	DDR
+
 	adc_setup();
 	init_serial();
 	TWI_Slave_Initialise( (unsigned char)((I2C_SUB_SLAVE_ADDR<<TWI_ADR_BITS) | (TRUE<<TWI_GEN_BIT) )); 
