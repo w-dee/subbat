@@ -1,6 +1,9 @@
 #ifndef TINYI2CMASTER_H__
 #define TINYI2CMASTER_H__
 
+
+#define I2C_STOP_AT_END 1 
+#define I2C_NOT_STOP_AT_END 0
 void I2C_Init();
 void I2C_Start();
 void I2C_Stop();

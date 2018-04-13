@@ -21,11 +21,9 @@
 #define I2C_DAT 6
 
 #define I2C_DATA_HI()\
-I2C_DDR &= ~ (1 << I2C_DAT);\
-I2C_PORT |= (1 << I2C_DAT);
+I2C_DDR &= ~ (1 << I2C_DAT);
 #define I2C_DATA_LO()\
-I2C_DDR |= (1 << I2C_DAT);\
-I2C_PORT &= ~ (1 << I2C_DAT);
+I2C_DDR |= (1 << I2C_DAT);
 
 #define I2C_STRETCH_LIMIT 500 // in us(1) tick
 
@@ -185,11 +183,18 @@ uint8_t I2C_WriteData(uint8_t slave_addr_7bit, uint8_t *buf, uint8_t size, uint8
 	I2C_Start();
 	nack = I2C_Write((slave_addr_7bit << 1));
 	if(nack)
+	{
+		I2C_Stop();
 		return I2C_ERROR_ADDRESS_NO_ACK;
+	}
 	while(size--)
 	{
 		nack = I2C_Write(*(buf++));
-		if(nack) return I2C_ERROR_DATA_NO_ACK;
+		if(nack)
+		{
+			I2C_Stop();
+			return I2C_ERROR_DATA_NO_ACK;
+		}
 	}
 	if(stop) I2C_Stop();
 	return 0;
@@ -201,7 +206,10 @@ uint8_t I2C_ReadData(uint8_t slave_addr_7bit, uint8_t *buf, uint8_t size)
 	I2C_Start();
 	nack = I2C_Write((slave_addr_7bit << 1) | 1);
 	if(nack)
+	{
+		I2C_Stop();
 		return I2C_ERROR_ADDRESS_NO_ACK;
+	}
 	while(size--) { *(buf++) = I2C_Read(size == 0 ? 0 : 1); }
 	I2C_Stop();
 	return 0;

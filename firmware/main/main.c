@@ -14,7 +14,19 @@
 #include "bme280.h"
 
 static void  __attribute__((noreturn)) enter_deep_sleep();
-static float get_tmp102_value();
+static float get_nct75_value();
+typedef enum tag_device_existence_status
+{
+	deNone, // non-existent
+	deFound, // found but not yet working
+	deWorking // found and working
+} device_existence_status_t;
+static uint8_t bme280_exist = deNone;
+static struct bme280_data bme280_last_result;
+
+uint8_t nct75_exist = deNone;
+static float nct75_temperature; // measuread temperature
+
 /*
 
  Vs : System input voltage (from main battery)
@@ -141,7 +153,7 @@ static void port_setup()
 pmap('C', 6, MDO0); // 1 PC6 (PCINT14/RESET)      RESET
 pmap('D', 0, MDI);  // 2 PD0 (PCINT16/RXD)        RX
 pmap('D', 1, MDO0); // 3 PD1 (PCINT17/TXD)        TX
-pmap('D', 2, MDO0); // 4 PD2 (PCINT18/INT0)       SCL
+pmap('D', 2, MDI);  // 4 PD2 (PCINT18/INT0)       SCL
 #define OUTPUT_CHARGE 'D', 3
 pmap('D', 3, MDO0); // 5 PD3 (PCINT19/OC2B/INT1)  OUTPUT_CHARGE
 #define SW_BAT 'D', 4
@@ -154,8 +166,8 @@ pmap('B', 6, MDO1); // 9 PB6 (PCINT6/XTAL1/TOSC1) /DEEP_SLEEP_EN
 pmap('B', 7, MDI);  //10 PB7 (PCINT7/XTAL2/TOSC2) SW_CHG
 #define SW_VR 'D', 5
 pmap('D', 5, MDO0); //11 PD5 (PCINT21/OC0B/T1)    SW_VR
-pmap('D', 6, MDO0); //12 PD6 (PCINT22/OC0A/AIN0)  SDA
-pmap('D', 7, MDI); //13 PD7 (PCINT23/AIN1)       DIGITAL_IN0
+pmap('D', 6, MDI);  //12 PD6 (PCINT22/OC0A/AIN0)  SDA
+pmap('D', 7, MDI);  //13 PD7 (PCINT23/AIN1)       DIGITAL_IN0
 #define SW_VS  'B', 0
 pmap('B', 0, MDO0); //14 PB0 (PCINT0/CLKO/ICP1)   SW_VS
 pmap('B', 1, MDO0); //15 PB1 (OC1A/PCINT1)        CC_CTRL
@@ -272,6 +284,24 @@ static void debug_send_f(float f)
 	sprintf_P(buf, PSTR("%.5f"), f);
 	debug_send(buf);
 }
+/**
+ * send hex string
+ */
+static void debug_send_h(long int n, uint8_t width)
+{
+	char buf[16];
+	ltoa(n, buf, 16);
+	uint8_t l = strlen(buf);
+	if(width - l > 0)
+	{
+		uint8_t c = width - l;
+		while(c--) send('0');
+	}
+
+	debug_send(buf);
+}
+
+
 
 static uint8_t receive( void )
 {
@@ -305,13 +335,16 @@ static eeprom_t eeprom=	{
 		.size = sizeof(eeprom),
 		.vth_vd = 10.0,
 		.vth_vs = 13.2,
-		.vth_vr = 10.0,
+		.vth_vr = 9.0,
 		.chg_cc = 2.0,
 		.chg_cv = 13.0,
 		.chg_float = 12.4,
+		.float_cc = 0.2,
 		.coeff_cv = -3*6,
 		.coeff_float = -5*6,
 		.chg_restart = 12.2,
+		.limit_temp_h = 55,
+		.limit_temp_l = -6,
 		.dark_ambient = 120,
 		.pwm_light = 50,
 		.pwm_dark = 12,
@@ -537,13 +570,14 @@ static float vr_target_current; // target current
 #define VR_CURRENT_RIPPLE_RANGE 0.02 // in [A]
 static uint32_t vr_stabled_tick;
 static float vr_target_voltage; // target voltage
-static uint16_t computed_voltage_pwm; // computed voltage pwm value
-#define OCR_SHIFT 5
+typedef uint32_t pwm_shifted_type;
+static pwm_shifted_type computed_voltage_pwm_shifted; // computed voltage pwm value
+#define OCR_SHIFT 6
 #define VR_CALIBRARTION_MAX_PWM_DIFFERENCE (22<<OCR_SHIFT) // approx. +/- 0.1 V
 static float mcu_voltage; // MCU Vdd voltage
 static uint8_t vr_connected_to_battery = 0;
-static uint16_t OCR1A_shadow = 0;
-static uint16_t OCR1B_shadow = 0;
+static pwm_shifted_type OCR1A_shadow_shifted = 0;
+static pwm_shifted_type OCR1B_shadow_shifted = 0;
 static float vr_now_current;// now output current from VR
 static float battery_raw_voltage = -1.0; // battery raw voltage (negative value for not-yet-measured)
 
@@ -573,7 +607,7 @@ static void set_target_current(float v)
 		(mcu_voltage * VR_FB_CURRENT_PWM_GAIN) * (ICR1 + 1);
 	vr_target_current = v;
 
-	debug_send("\r\nset_current:"); debug_send_f(vr_target_current); debug_send("  ");
+	debug_send("\r\nset_target_current:"); debug_send_f(vr_target_current); debug_send("  ");
 	debug_send("width:"); debug_send_n(pwm_width); debug_send("  ");
 	debug_send("ICR1:"); debug_send_n(ICR1); debug_send("  ");
 	debug_send("\r\n");
@@ -581,7 +615,7 @@ static void set_target_current(float v)
 	if(pwm_width >= ICR1) do_panic(4); // wtf ? out of range
 
 	OCR1A = pwm_width;
-	OCR1A_shadow = pwm_width << OCR_SHIFT;
+	OCR1A_shadow_shifted = (pwm_shifted_type)pwm_width << OCR_SHIFT;
 
 	if(vr_status == vr_run)
 	{
@@ -602,7 +636,7 @@ static void set_calibration_current()
 {
 	// set current limit to no limit, to calibrate voltage
 	OCR1A = ICR1 - 1;
-	OCR1A_shadow = OCR1A << OCR_SHIFT;
+	OCR1A_shadow_shifted = OCR1A << OCR_SHIFT;
 }
 
 static void start_vr();
@@ -613,11 +647,16 @@ static void set_target_voltage(float v)
 	uint16_t pwm_width = voltage_to_voltage_comparator_voltage(v) / mcu_voltage * (ICR1 + 1);
 	vr_target_voltage = v;
 
-	if(pwm_width >= ICR1) do_panic(4); // wtf ? out of range
+	debug_send("\r\nset_target_voltage:"); debug_send_f(vr_target_voltage); debug_send("  ");
+	debug_send("width:"); debug_send_n(pwm_width); debug_send("  ");
+	debug_send("ICR1:"); debug_send_n(ICR1); debug_send("  ");
+	debug_send("\r\n");
+
+	if(pwm_width >= ICR1) do_panic(5); // wtf ? out of range
 
 	OCR1B = pwm_width;
-	OCR1B_shadow = pwm_width << OCR_SHIFT;
-	computed_voltage_pwm = OCR1B_shadow;
+	OCR1B_shadow_shifted = (pwm_shifted_type)pwm_width << OCR_SHIFT;
+	computed_voltage_pwm_shifted = OCR1B_shadow_shifted;
 
 	if(vr_status == vr_run)
 	{
@@ -692,29 +731,48 @@ static void vr_recover_disconnected_temporarily()
 	}
 }
 
+static void debug_sp()
+{
+	debug_send_P(PSTR("  "));
+}
+
 static void dump_voltages(float now_voltage)
 {
-	debug_send("state:"); debug_send_n(vr_status); debug_send("  ");
-	debug_send("target:"); debug_send_f(vr_target_voltage);debug_send("  ");
-	debug_send("now:"); debug_send_f(now_voltage);debug_send("  ");
-	debug_send("comp:"); debug_send_n(!!(PIND & (1<<7)));debug_send("  ");
-{
 	float c = get_current_avg4(ADC_CH_ICHARGE_SENSE);
-	debug_send("current:"); debug_send_f(c); debug_send("  ");
-}
-	debug_send("\r");
+	uint8_t log = 0;
 
+	INTERVAL(2000)
+	{
+		// do logging for graphing
+		log = 1;
+		debug_send_P(PSTR("\r\n"));
+		debug_send_P(PSTR("Log: "));
+	}
+
+	debug_send_P(PSTR("tick: "));     debug_send_n(get_tick());         debug_sp();
+	debug_send_P(PSTR("state: "));    debug_send_n(vr_status);          debug_sp();
+	debug_send_P(PSTR("v_targ: "));   debug_send_f(vr_target_voltage);  debug_sp();
+	debug_send_P(PSTR("v_now: "));    debug_send_f(now_voltage);        debug_sp();
+	debug_send_P(PSTR("c_targ: "));   debug_send_f(vr_target_current);  debug_sp();
+	debug_send_P(PSTR("c_now: "));    debug_send_f(c);                  debug_sp();
+	debug_send_P(PSTR("bat_temp: ")); debug_send_f(nct75_temperature);  debug_sp();
+	debug_send("pwm:"); debug_send_n(OCR1B);debug_send("  ");
+
+	if(log)
+		debug_send_P(PSTR("\r\n"));
+	else
+		debug_send_P(PSTR("\r"));
 }
 
 static void calibrate_voltate(float now_voltage)
 {
 	// do voltage calibration
-	uint16_t lower = computed_voltage_pwm > VR_CALIBRARTION_MAX_PWM_DIFFERENCE ?
-		computed_voltage_pwm - VR_CALIBRARTION_MAX_PWM_DIFFERENCE : 0;
-	uint16_t upper = computed_voltage_pwm + VR_CALIBRARTION_MAX_PWM_DIFFERENCE;
+	pwm_shifted_type lower = computed_voltage_pwm_shifted > VR_CALIBRARTION_MAX_PWM_DIFFERENCE ?
+		computed_voltage_pwm_shifted - VR_CALIBRARTION_MAX_PWM_DIFFERENCE : 0;
+	pwm_shifted_type upper = computed_voltage_pwm_shifted + VR_CALIBRARTION_MAX_PWM_DIFFERENCE;
 	if(upper >= (ICR1<<OCR_SHIFT)) upper = (ICR1<<OCR_SHIFT);
 
-	uint16_t width = OCR1B_shadow;
+	pwm_shifted_type width = OCR1B_shadow_shifted;
 
 	if(now_voltage < vr_target_voltage)
 	{
@@ -727,10 +785,8 @@ static void calibrate_voltate(float now_voltage)
 		if(width > lower) --width;		
 	}
 
-	OCR1B_shadow = width;
+	OCR1B_shadow_shifted = width;
 	OCR1B = width >> OCR_SHIFT;	
-
-	debug_send("pwm:"); debug_send_n(width);debug_send("  ");
 	dump_voltages(now_voltage);
 }
 
@@ -757,7 +813,7 @@ static void poll_vr()
 			//if(battery_raw_voltage <= 0) break; // raw voltage not yet measured
 			if(vr_target_voltage >= battery_raw_voltage)
 			{
-				vr_status = vr_calib; // ok to load
+				vr_status = vr_calib; // ok to calibrate
 			}
 			break;
 
@@ -844,15 +900,17 @@ static uint8_t output_charge_capacitor_connected = 0;
 
 static void set_output_charge_capacitor_connected (uint8_t b)
 {
-	if(b)
+	if(b && !output_charge_capacitor_connected)
 	{
 		pmap(OUTPUT_CHARGE , MDO1);
 		output_charge_capacitor_connected = 1;
+		debug_send_P(PSTR("\r\nOutput capacitor connected\r\n"));
 	}
-	else
+	else if(!b && output_charge_capacitor_connected)
 	{
 		pmap(OUTPUT_CHARGE , MDO0);
 		output_charge_capacitor_connected = 0;
+		debug_send_P(PSTR("\r\nOutput capacitor disconnected\r\n"));
 	}
 }
 
@@ -933,10 +991,11 @@ static void set_use_battery_voltage_for_mcu(uint8_t t)
 	else
 		pmap(DEEP_SLEEP_EN , MDO1); // no, not use.
 }
-
+static void set_charge_state(uint8_t v);
 static void  __attribute__((noreturn)) enter_deep_sleep() 
 {
 	cli();
+	set_charge_state(0);
 	disconnect_output();
 	_delay_ms(100);
 	set_use_battery_voltage_for_mcu(0);
@@ -956,8 +1015,11 @@ void poll_battery_raw_voltage()
 	// we need to disconnect the battery very short-time (500us).
 	// this is only able while output capacitor is active.
 
-	INTERVAL(1000)
+	INTERVAL(5000)
 	{
+		debug_send_P(PSTR("\r\nOutput cap: cap_state:"));
+		debug_send_n(output_charge_capacitor_connect_triggered_state);
+		debug_send_P(PSTR("  "));
 		if(output_charge_capacitor_ok())
 		{
 			// output charge capacitor is connected properly
@@ -991,9 +1053,9 @@ void poll_battery_raw_voltage()
 			vr_recover_disconnected_temporarily();
 			_delay_us(100);
 
-			debug_send("\r\nbattery raw:"); debug_send_n(battery_raw_voltage); debug_send("\r\n");
-
+			debug_send("battery raw:"); debug_send_n(battery_raw_voltage);
 		}
+		debug_send("\r\n");
 	}
 }
 
@@ -1001,7 +1063,7 @@ void poll_battery_raw_voltage()
 // battery charge logic state machine
 static void set_battery_cc_cv_param()
 {
-	float v = eeprom.chg_cv + (get_tmp102_value() - 25.0) * eeprom.coeff_cv * 0.001;
+	float v = eeprom.chg_cv + (nct75_temperature - 25.0) * eeprom.coeff_cv * 0.001;
 	float c = eeprom.chg_cc;
 	set_target_voltage_if_changed(v);
 	set_target_current_if_changed(c);
@@ -1009,13 +1071,10 @@ static void set_battery_cc_cv_param()
 	debug_send_P(PSTR("\r\nCharge set current:")); debug_send_f(c); debug_send_P(PSTR("\r\n"));
 }
 
-
-#define FLOATING_CURRENT_LIMIT 1.0
-
 static void set_battery_float_param()
 {
-	float v = eeprom.chg_float + (get_tmp102_value() - 25.0) * eeprom.coeff_float * 0.001;
-	float c = FLOATING_CURRENT_LIMIT;
+	float v = eeprom.chg_float + (nct75_temperature - 25.0) * eeprom.coeff_float * 0.001;
+	float c = eeprom.float_cc;
 	set_target_voltage_if_changed(v);
 	set_target_current_if_changed(c);
 	debug_send_P(PSTR("\r\nFloating set voltage:")); debug_send_f(v); debug_send_P(PSTR("\r\n"));
@@ -1035,14 +1094,13 @@ static uint8_t battery_charge_fsm_state = bcfsNone;
 
 static void poll_battery_charge()
 {
-	// TODO: disconnect battery when it is in high temperature
 	switch(battery_charge_fsm_state)
 	{
 	case bcfsNone: // the stop state
 		break;
 
 	case bcfsMeasureBatteryVoltage: // measure battery voltage
-		if(battery_raw_voltage > 0)
+		if(battery_raw_voltage > 0 && nct75_exist == deWorking)
 		{
 			// battery raw voltage has already measured
 			if(battery_raw_voltage < eeprom.chg_restart)
@@ -1069,28 +1127,28 @@ static void poll_battery_charge()
 	case bcfsChargeCCCV: // CCCV charging
 		if(is_vr_running_well() && vr_now_current <= BATTERY_CHARGE_END_CURRENT)
 		{
-			// battery charge end; beging float charging
+			// battery charge end; begin float charging
 			battery_charge_fsm_state = bcfsChargeFloat;
 			debug_send_P(PSTR("\r\nbcfsChargeFloat\r\n"));
 		}
 
 
-	{
-		INTERVAL(10000)
 		{
-			set_battery_cc_cv_param();
+			INTERVAL(10000)
+			{
+				set_battery_cc_cv_param();
+			}
 		}
-	}
 		break;
 	
 	case bcfsChargeFloat: // floating charging
 
-	{
-		INTERVAL(10000)
 		{
-			set_battery_float_param();
+			INTERVAL(10000)
+			{
+				set_battery_float_param();
+			}
 		}
-	}
 		break;
 
 	
@@ -1134,6 +1192,16 @@ static uint8_t system_voltage_state;
 
 static void poll_system_and_battery_voltage()
 {
+	// check battery voltage
+	if(nct75_exist == deWorking)
+	{
+		if(eeprom.limit_temp_l >= nct75_temperature)
+			do_panic(7); // battery temp too low
+		
+		if(eeprom.limit_temp_h <= nct75_temperature)
+			do_panic(8); // battery temp too high
+	}
+
 	// check system voltage
 	voltage_sys = get_voltage_avg4(ADC_CH_VS_SENSE);
 
@@ -1165,7 +1233,6 @@ static void poll_system_and_battery_voltage()
 				// this shutdown will disconnect MCU power too.
 				enter_deep_sleep();
 			}
-			// TODO: disconnect battery when it is in high temperature
 
 			break;
 
@@ -1225,6 +1292,16 @@ static void parse_command(const char *buf)
 	if(buf[0] == 'o' && buf[1] == 'f' && buf[2] == 'f')
 	{
 		stop_vr();
+	}
+	else
+	if(buf[0] == 'c' && buf[1] == 'h' && buf[2] == 'a')
+	{
+		set_charge_state(1);
+	}
+	else
+	if(buf[0] == 's' && buf[1] == 't' && buf[2] == 'o')
+	{
+		set_charge_state(0);
 	}
 	else
 	{
@@ -1288,18 +1365,11 @@ __attribute__((noinline)) static void poll_serial()
 //--------------------------------------------------------------------
 // BME280 interface
 
-typedef enum tag_device_existence_status
-{
-	deNone, // non-existent
-	deFound, // found but not yet working
-	deWorking // found and working
-} device_existence_status_t;
-
 static int8_t bme280_read(uint8_t dev_id, uint8_t reg_addr,
 		uint8_t *data, uint16_t len)
 {
 	uint8_t res;
-	res = I2C_WriteData(dev_id, &reg_addr, 1, 1);
+	res = I2C_WriteData(dev_id, &reg_addr, 1, I2C_STOP_AT_END);
 	if(res != 0) return BME280_E_COMM_FAIL;
 	res = I2C_ReadData(dev_id, data, len);
 	if(res != 0) return BME280_E_COMM_FAIL;
@@ -1331,7 +1401,6 @@ static void bme280_delay(uint32_t period)
 }
 
 static struct bme280_dev bme280;
-static uint8_t bme280_exist = deNone;
 
 void bme280_setup()
 {
@@ -1366,17 +1435,15 @@ void bme280_setup()
 	}
 }
 
-static struct bme280_data bme280_last_result;
-
 static uint8_t bme280_measure_started = 0;
 static uint32_t bme280_measure_end_tick;
 #define BME280_MEASURE_TIME 40
 
 void bme280_poll()
 {
-	INTERVAL(4000)
+	INTERVAL(8000)
 	{
-		// every 4000ms
+		// every 8000ms
 		// trigger measurement start
 		if(bme280_exist != deNone)
 		{
@@ -1413,87 +1480,128 @@ void bme280_poll()
 
 }
 //--------------------------------------------------------------------
-// TMP102 interface
+// NCT75 interface
 
-#define  TMP102_ADDRESS 0b1001000
-#define TMP102_MEASURE_TIME 30
+/*
+	NCT75 is a variant of LM75 with higher accuracy, and some
+	extended features like one-shot mode.
+*/
 
-uint8_t tmp102_exist = deNone;
-static void init_tmp102()
+#define NCT75_ADDRESS  0b1001001 
+#define NCT75_MEASURE_TIME 80
+
+static uint8_t nct75_measure_started = 0;
+static uint32_t nct75_measure_end_tick;
+
+static void init_nct75()
 {
 	uint8_t res;
 	uint8_t retry = 4;
 
 	while(retry --)
 	{
+		I2C_Start();
+		res = I2C_Write((NCT75_ADDRESS << 1) | 1); // attempt to read
+		I2C_Stop();
+		if(!res) goto next;
+	}
+	goto not_responding;
+
+next:
+	debug_send_P(PSTR("\r\nNCT75 seems to be exist ... trying to configure ...\r\n"));
+
+	retry = 4;
+	while(retry --)
+	{
 		// write config bytes to enable shutdown
-		uint8_t config_bytes[3];
+		uint8_t config_bytes[2];
 		config_bytes[0] = 0x01; // pointer: configuration register
-		config_bytes[1] = 0b01100001; // CR1: shutdown mode on
-		config_bytes[2] = 0b10100000;
-		res = I2C_WriteData(TMP102_ADDRESS, config_bytes, 3, 1);
+		config_bytes[1] = (1<<5); // CR: one-shot mode on
+		res = I2C_WriteData(NCT75_ADDRESS, config_bytes, 2, I2C_STOP_AT_END);
 		if(res == 0)
 		{
-			tmp102_exist = deFound;
+			nct75_exist = deFound;
 			return;
 		}
 	}
 
-	debug_send_P(PSTR("\r\nTMP102 not responding.\r\n"));
+not_responding:
+	debug_send_P(PSTR("\r\nNCT75 not responding.\r\n"));
 }
 
 
-static uint8_t tmp102_measure_started = 0;
-static uint32_t tmp102_measure_end_tick;
-static float tmp102_temperature; // measuread temperature
-
-static float get_tmp102_value() { return tmp102_temperature; }
-
-static void tmp102_poll()
+static void nct75_poll()
 {
-	INTERVAL(3000)
+	INTERVAL(7000)
 	{
-		// every 3000ms
+		// every 7000ms
 		// trigger measurement start
-		if(tmp102_exist != deNone)
+		if(nct75_exist != deNone)
 		{
-			uint8_t config_bytes[3];
-			config_bytes[0] = 0x01; // pointer: configuration register
-			config_bytes[1] = 0b11100001; // CR1: shutdown mode on, trigger one shot convertion
-			config_bytes[2] = 0b10100000;
-			I2C_WriteData(TMP102_ADDRESS, config_bytes, 3, 1);
 
-			tmp102_measure_end_tick = get_tick() + TMP102_MEASURE_TIME;
-			tmp102_measure_started = 1;
+			uint8_t trigger_byte[2];
+			trigger_byte[0] = 0x04; // pointer: one-shot register
+			trigger_byte[1] = 0b11111111; // dummy data; data content is ignored
+			I2C_WriteData(NCT75_ADDRESS, trigger_byte, 2, I2C_STOP_AT_END);
+
+			nct75_measure_end_tick = get_tick() + NCT75_MEASURE_TIME;
+			nct75_measure_started = 1;
 		}
 	}
 
-	if(tmp102_measure_started && tick_elapsed(tmp102_measure_end_tick))
+	if(nct75_measure_started && tick_elapsed(nct75_measure_end_tick))
 	{
 		// get result
-		tmp102_measure_started = 0;
+		nct75_measure_started = 0;
 
 		uint8_t tmp[2];
 		tmp[0] = 0; // temerature register
 		uint8_t res;
-		res = I2C_WriteData(TMP102_ADDRESS, tmp, 1, 1);
-		if(res == 0) res = I2C_ReadData(TMP102_ADDRESS, tmp, 2);
+		res = I2C_WriteData(NCT75_ADDRESS, tmp, 1, I2C_NOT_STOP_AT_END);
+		if(res == 0) res = I2C_ReadData(NCT75_ADDRESS, tmp, 2);
 		if(res == 0)
 		{
-			int16_t d = (tmp[0] << 4) | (tmp[1] >> 4);
-			if((uint16_t)d > 0x7FF) d |= 0xf000;
-			tmp102_temperature = d * 0.0625;
-			tmp102_exist = deWorking;
-			debug_send_P(PSTR("TMP102 : "));
-			debug_send_f(tmp102_temperature);
+			int16_t d = (tmp[0] << 8 ) | (tmp[1]);
+			d >>= 4; 
+			nct75_temperature = d * 0.0625;
+			nct75_exist = deWorking;
+			debug_send_P(PSTR("NCT75 : "));
+			debug_send_f(nct75_temperature);
 			debug_send_P(PSTR(" deg C\r\n"));
 		}
 		else
 		{
-			tmp102_exist = deFound; // last temperature measurement is invalid
+			nct75_exist = deFound; // last temperature measurement is invalid
 		}
 	}
 
+}
+
+//--------------------------------------------------------------------
+static void enum_i2c()
+{
+	debug_send_P(PSTR("I2C map:\r\n"));
+	for(uint8_t i = 0; i < 128; ++i)
+	{
+		debug_send_h(i, 2);
+		debug_send_P(PSTR(":"));
+		if(i == 0 )
+		{
+			send('?');
+		}
+		else
+		{
+			I2C_Start();
+			uint8_t res = I2C_Write((i << 1) | 1); // attempt to read
+			I2C_Stop();
+			if(res)
+				send('.');
+			else
+				send('!');
+		}
+		debug_send_P(PSTR("  "));
+		if((i & 7) == 7) debug_send_P(PSTR("\r\n"));
+	}
 }
 
 //--------------------------------------------------------------------
@@ -1508,26 +1616,27 @@ int main(void)
 
 	// wait for power stabilization
 	_delay_ms(50);
+	// banner
+	debug_send_P(PSTR("\r\n\r\nAux power controller\r\n\r\n"));
 
 	// setup
 	I2C_Init();
+	enum_i2c();
 //	bme280_setup();
-	init_tmp102();
+	init_nct75();
 	//eeprom_setup(); TODO: transfer eeprom content from sub processor
 //	eeprom_copy(); // TODO: proper eeprom initialization
 	adc_setup();
 	timer0_setup();
 	timer1_setup();
 
-	// banner
-	debug_send_P(PSTR("\r\n\r\nAux power controller\r\n\r\n"));
 
 
 	// enter infinite loop
 	for(;;)
 	{
 //		bme280_poll();
-		tmp102_poll();
+		nct75_poll();
 		poll_power();
 		poll_serial();
 	}
