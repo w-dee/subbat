@@ -25,6 +25,9 @@ hex: main.hex
 
 program: flash fuse
 
+reset:
+	$(HIDSPX) -rF
+
 # rule for programming fuse bits:
 fuse:
 	@[ "$(FUSE_H)" != "" -a "$(FUSE_L)" != "" ] || \
